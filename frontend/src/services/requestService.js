@@ -16,6 +16,7 @@ import {
   getTrustAdjustmentForCondition,
   returnIssueConditions,
 } from "../utils/returnInspection";
+import { clampTrustScore, defaultTrustStats } from "../utils/trust";
 
 export const getFreshRequest = async (requestId) => {
   const requestRef = doc(db, "requests", requestId);
@@ -406,7 +407,15 @@ export const inspectReturn = async ({
   }
 
   const inspectionNote = note.trim();
+  const shouldProcessTrustScore = freshRequest.trustScoreProcessed !== true;
   const batch = writeBatch(db);
+  const trustProcessingFields = shouldProcessTrustScore
+    ? {
+        trustScoreProcessed: true,
+        trustScoreProcessedAt: serverTimestamp(),
+        trustScoreDelta: adjustment.scoreDelta,
+      }
+    : {};
 
   if (adjustment.completed) {
     batch.update(requestRef, {
@@ -416,6 +425,7 @@ export const inspectReturn = async ({
       returnInspectedAt: serverTimestamp(),
       completedAt: serverTimestamp(),
       returnConfirmedBy: user.uid,
+      ...trustProcessingFields,
     });
 
     batch.update(itemRef, {
@@ -435,6 +445,7 @@ export const inspectReturn = async ({
       returnIssueNote: inspectionNote,
       returnIssueReportedAt: serverTimestamp(),
       returnIssueReportedBy: user.uid,
+      ...trustProcessingFields,
     });
 
     batch.update(itemRef, {
@@ -442,7 +453,41 @@ export const inspectReturn = async ({
     });
   }
 
-  // TODO: Move trust score calculation/update to Firebase Cloud Functions.
+  if (shouldProcessTrustScore) {
+    const borrowerRef = doc(db, "users", freshRequest.borrowerId);
+    const borrowerSnapshot = await getDoc(borrowerRef);
+    const borrowerProfile = borrowerSnapshot.exists()
+      ? borrowerSnapshot.data()
+      : {};
+    const currentScore = Number(borrowerProfile.reputationScore ?? 100);
+    const currentStats = {
+      ...defaultTrustStats,
+      ...(borrowerProfile.trustStats || {}),
+    };
+    const nextStats = {
+      ...currentStats,
+      [adjustment.statKey]: (currentStats[adjustment.statKey] || 0) + 1,
+      lastUpdatedAt: serverTimestamp(),
+    };
+
+    if (adjustment.completed) {
+      nextStats.completedBorrows = (currentStats.completedBorrows || 0) + 1;
+    } else {
+      nextStats.returnIssues = (currentStats.returnIssues || 0) + 1;
+    }
+
+    // TODO: For production, move trust score calculation/update to Firebase
+    // Cloud Functions. This frontend implementation is used for the FYP
+    // prototype because the Firebase Spark plan cannot deploy Functions.
+    batch.set(
+      borrowerRef,
+      {
+        reputationScore: clampTrustScore(currentScore + adjustment.scoreDelta),
+        trustStats: nextStats,
+      },
+      { merge: true }
+    );
+  }
 
   await batch.commit();
 };

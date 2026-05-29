@@ -1,4 +1,6 @@
+import { useProfileSummary } from "../../hooks/useProfileSummary";
 import { formatFirestoreDate } from "../../utils/formatDate";
+import { getItemCategoryLabel } from "../../utils/itemCategories";
 import {
   getTrustBadgeClass,
   getTrustLabel,
@@ -6,8 +8,18 @@ import {
   getTrustStats,
 } from "../../utils/trust";
 import Badge from "../ui/Badge";
+import EmptyState from "../ui/EmptyState";
 
 function PublicProfileModal({ loading, onClose, profile }) {
+  const {
+    error,
+    loading: summaryLoading,
+    ownedItems,
+  } = useProfileSummary(profile?.uid, {
+    includeBorrowerRequests: false,
+    includeOwnerRequests: false,
+  });
+
   if (!profile) {
     return null;
   }
@@ -15,11 +27,12 @@ function PublicProfileModal({ loading, onClose, profile }) {
   const score = getTrustScore(profile);
   const trustLabel = getTrustLabel(score);
   const stats = getTrustStats(profile);
+  const availableItems = ownedItems.filter((item) => item.available === true);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 py-6">
       <div
-        className="w-full max-w-lg rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl sm:p-8"
+        className="max-h-[calc(100svh-3rem)] w-full max-w-3xl overflow-auto rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl sm:p-8"
         role="dialog"
         aria-modal="true"
       >
@@ -41,8 +54,11 @@ function PublicProfileModal({ loading, onClose, profile }) {
                 {profile.username || "ShareSync user"}
               </h2>
               <Badge className={`mt-2 ${getTrustBadgeClass(score)}`}>
-                {score} / 100 · {trustLabel}
+                {score} / 100 - {trustLabel}
               </Badge>
+              <p className="mt-2 text-sm font-semibold text-slate-500">
+                Joined {formatFirestoreDate(profile.createdAt, "recently")}
+              </p>
             </div>
           </div>
           <button
@@ -54,26 +70,87 @@ function PublicProfileModal({ loading, onClose, profile }) {
           </button>
         </div>
 
-        {loading && (
+        {(loading || summaryLoading) && (
           <p className="mt-5 rounded-2xl bg-stone-50 px-4 py-3 text-sm font-medium text-slate-600">
             Loading profile...
           </p>
         )}
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Stat label="Completed" value={stats.completedBorrows} />
-          <Stat label="Good Returns" value={stats.goodReturns} />
-          <Stat label="Issues" value={stats.returnIssues} />
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4">
-          <p className="text-sm font-bold text-slate-500">Joined</p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            {formatFirestoreDate(profile.createdAt, "Not available")}
+        {error && (
+          <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            {error}
           </p>
-        </div>
+        )}
+
+        <Section title="Trust Overview">
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Stat label="Trust Score" value={`${score} / 100`} />
+            <Stat label="Trust Label" value={trustLabel} />
+            <Stat label="Completed Borrows" value={stats.completedBorrows} />
+            <Stat label="Total Return Issues" value={stats.returnIssues} />
+          </div>
+        </Section>
+
+        <Section title="Return Condition Breakdown">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Stat label="Good Condition" value={stats.goodReturns} />
+            <Stat label="Minor Wear" value={stats.minorWearReturns} />
+            <Stat label="Damaged" value={stats.damagedReturns} />
+            <Stat label="Missing Part" value={stats.missingPartReturns} />
+            <Stat
+              label="Not Returned Properly"
+              value={stats.notReturnedIssues}
+            />
+            <Stat label="Other Issues" value={stats.otherIssues} />
+          </div>
+        </Section>
+
+        <Section title="Available Items from this User">
+          {availableItems.length === 0 && (
+            <EmptyState>No available listings found.</EmptyState>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {availableItems.slice(0, 6).map((item) => (
+              <article
+                className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+                key={item.id}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-black text-slate-950">{item.name}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                      {item.description || "No description provided."}
+                    </p>
+                  </div>
+                  <Badge
+                    className={
+                      item.available
+                        ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                        : "bg-stone-100 text-slate-600 ring-stone-200"
+                    }
+                  >
+                    {item.available ? "Available" : "Unavailable"}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Chip>{getItemCategoryLabel(item)}</Chip>
+                  <Chip>{item.community}</Chip>
+                </div>
+              </article>
+            ))}
+          </div>
+        </Section>
       </div>
     </div>
+  );
+}
+
+function Section({ children, title }) {
+  return (
+    <section className="mt-6">
+      <h3 className="text-lg font-black text-slate-950">{title}</h3>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
 
@@ -85,6 +162,14 @@ function Stat({ label, value }) {
       </p>
       <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
     </div>
+  );
+}
+
+function Chip({ children }) {
+  return (
+    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-stone-200">
+      {children}
+    </span>
   );
 }
 
