@@ -112,29 +112,47 @@ function PublicProfileModal({ loading, onClose, profile }) {
           <div className="grid gap-3 sm:grid-cols-2">
             {availableItems.slice(0, 6).map((item) => (
               <article
-                className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+                className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50"
                 key={item.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-black text-slate-950">{item.name}</h3>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-600">
-                      {item.description || "No description provided."}
-                    </p>
-                  </div>
-                  <Badge
-                    className={
-                      item.available
-                        ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                        : "bg-stone-100 text-slate-600 ring-stone-200"
-                    }
-                  >
-                    {item.available ? "Available" : "Unavailable"}
-                  </Badge>
+                <div className="relative h-28 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+                  {item.imageBase64 ? (
+                    <img
+                      alt={item.name}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      src={item.imageBase64}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 text-xl font-black text-emerald-800 shadow-sm">
+                        {(item.name || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Chip>{getItemCategoryLabel(item)}</Chip>
-                  <Chip>{item.community}</Chip>
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-black text-slate-950">{item.name}</h3>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                        {item.description || "No description provided."}
+                      </p>
+                    </div>
+                    <Badge
+                      className={
+                        item.available
+                          ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                          : "bg-stone-100 text-slate-600 ring-stone-200"
+                      }
+                    >
+                      {item.available ? "Available" : "Unavailable"}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Chip>{getItemCategoryLabel(item)}</Chip>
+                    <Chip>{item.community}</Chip>
+                  </div>
                 </div>
               </article>
             ))}

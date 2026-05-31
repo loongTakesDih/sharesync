@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+import ImageCropModal from "../components/items/ImageCropModal";
 import { useMyItems } from "../hooks/useMyItems";
 import { useRequests } from "../hooks/useRequests";
 import {
@@ -17,6 +18,7 @@ import {
   isValidItemCategory,
   itemCategories,
 } from "../utils/itemCategories";
+import { cropImageToBase64, readImageFileForCrop } from "../utils/imageUtils";
 
 const inputClass =
   "w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
@@ -26,8 +28,14 @@ function MyItems({ activeCommunity, user, userProfile }) {
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editImageBase64, setEditImageBase64] = useState("");
   const [editAvailable, setEditAvailable] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropFocalX, setCropFocalX] = useState(50);
+  const [cropFocalY, setCropFocalY] = useState(50);
+  const [cropZoom, setCropZoom] = useState(1);
   const { items, loading } = useMyItems({ activeCommunity, user });
   const { incomingRequests } = useRequests({ activeCommunity, user });
 
@@ -52,6 +60,7 @@ function MyItems({ activeCommunity, user, userProfile }) {
     setEditName(item.name);
     setEditCategory(item.category || "");
     setEditDescription(item.description || "");
+    setEditImageBase64(item.imageBase64 || "");
     setEditAvailable(item.available);
   };
 
@@ -60,7 +69,9 @@ function MyItems({ activeCommunity, user, userProfile }) {
     setEditName("");
     setEditCategory("");
     setEditDescription("");
+    setEditImageBase64("");
     setEditAvailable(true);
+    setCropImage(null);
   };
 
   const saveItem = async (event) => {
@@ -83,6 +94,7 @@ function MyItems({ activeCommunity, user, userProfile }) {
         name: editName.trim(),
         category: editCategory,
         description: editDescription.trim(),
+        imageBase64: editImageBase64,
         available: editAvailable,
       });
 
@@ -107,6 +119,50 @@ function MyItems({ activeCommunity, user, userProfile }) {
       await deleteItemDocument({ activeCommunity, itemId, user });
     } catch (error) {
       alert(error.message);
+    }
+  };
+
+  const handleEditImageChange = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    setImageProcessing(true);
+
+    try {
+      const imageForCrop = await readImageFileForCrop(file);
+      setCropImage(imageForCrop);
+      setCropFocalX(50);
+      setCropFocalY(50);
+      setCropZoom(1);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setImageProcessing(false);
+    }
+  };
+
+  const applyEditImageCrop = async () => {
+    if (!cropImage) {
+      return;
+    }
+
+    setImageProcessing(true);
+
+    try {
+      const croppedImage = await cropImageToBase64({
+        focalX: cropFocalX,
+        focalY: cropFocalY,
+        source: cropImage.source,
+        zoom: cropZoom,
+      });
+      setEditImageBase64(croppedImage);
+      setCropImage(null);
+    } catch (error) {
+      setEditImageBase64("");
+      alert(error.message);
+    } finally {
+      setImageProcessing(false);
     }
   };
 
@@ -159,11 +215,22 @@ function MyItems({ activeCommunity, user, userProfile }) {
               className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
               key={item.id}
             >
-              <div className="h-28 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 p-4">
-                <div className="flex h-full items-end justify-between">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 text-xl font-black text-emerald-800 shadow-sm">
-                    {(item.name || "?").slice(0, 2).toUpperCase()}
-                  </div>
+              <div className="relative h-32 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+                {item.imageBase64 && (
+                  <img
+                    alt={item.name}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src={item.imageBase64}
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-transparent" />
+                <div className="relative z-10 flex h-full items-end justify-between p-4">
+                  {!item.imageBase64 && (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 text-xl font-black text-emerald-800 shadow-sm">
+                      {(item.name || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div />
                   <Badge
                     className={
                       item.available
@@ -200,6 +267,45 @@ function MyItems({ activeCommunity, user, userProfile }) {
                       ))}
                     </select>
 
+                    <label className="grid gap-2 text-sm font-bold text-slate-700">
+                      Item image
+                      <input
+                        className={inputClass}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) =>
+                          handleEditImageChange(event.target.files?.[0])
+                        }
+                      />
+                      <span className="text-xs font-semibold text-slate-500">
+                        Optional. Uploaded images are cropped to the shared 4:3
+                        listing size.
+                      </span>
+                    </label>
+
+                    {imageProcessing && (
+                      <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-600 ring-1 ring-stone-200">
+                        Preparing image...
+                      </p>
+                    )}
+
+                    {editImageBase64 && (
+                      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                        <img
+                          alt="Item preview"
+                          className="h-40 w-full rounded-xl object-cover"
+                          src={editImageBase64}
+                        />
+                        <button
+                          className="mt-3 rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-stone-50"
+                          type="button"
+                          onClick={() => setEditImageBase64("")}
+                        >
+                          Remove image
+                        </button>
+                      </div>
+                    )}
+
                     <textarea
                       className={`${inputClass} min-h-28`}
                       value={editDescription}
@@ -222,7 +328,7 @@ function MyItems({ activeCommunity, user, userProfile }) {
                       <button
                         className="rounded-2xl bg-emerald-700 px-4 py-2 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
                         type="submit"
-                        disabled={saving}
+                        disabled={saving || imageProcessing}
                       >
                         {saving ? "Saving..." : "Save"}
                       </button>
@@ -290,6 +396,18 @@ function MyItems({ activeCommunity, user, userProfile }) {
           );
         })}
       </div>
+      <ImageCropModal
+        crop={cropImage}
+        focalX={cropFocalX}
+        focalY={cropFocalY}
+        onApply={applyEditImageCrop}
+        onCancel={() => setCropImage(null)}
+        onFocalXChange={setCropFocalX}
+        onFocalYChange={setCropFocalY}
+        onZoomChange={setCropZoom}
+        processing={imageProcessing}
+        zoom={cropZoom}
+      />
     </section>
   );
 }

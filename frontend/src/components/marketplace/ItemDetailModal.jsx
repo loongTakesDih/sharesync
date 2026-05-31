@@ -39,11 +39,22 @@ function ItemDetailModal({
         role="dialog"
         aria-modal="true"
       >
-        <div className="h-48 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 p-6">
-          <div className="flex h-full items-end justify-between">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/85 text-3xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
-              {(item.name || "?").slice(0, 2).toUpperCase()}
-            </div>
+        <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+          {item.imageBase64 && (
+            <img
+              alt={item.name}
+              className="absolute inset-0 h-full w-full object-contain"
+              src={item.imageBase64}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
+          <div className="relative z-10 flex h-full items-end justify-between p-6">
+            {!item.imageBase64 && (
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/85 text-3xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
+                {(item.name || "?").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div />
             <Badge
               className={
                 item.available
@@ -98,7 +109,7 @@ function ItemDetailModal({
             </button>
           </div>
 
-          <p className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4 leading-7 text-slate-700">
+          <p className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-stone-50/70 p-4 leading-7 text-slate-700">
             {item.description || "No description provided."}
           </p>
 

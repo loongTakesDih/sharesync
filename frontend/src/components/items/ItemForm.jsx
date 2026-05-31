@@ -6,9 +6,13 @@ const inputClass =
 function ItemForm({
   category,
   description,
+  imageBase64,
+  imageProcessing,
   name,
   onCategoryChange,
   onDescriptionChange,
+  onImageChange,
+  onImageRemove,
   onNameChange,
   onSubmit,
   saving,
@@ -44,6 +48,43 @@ function ItemForm({
       </label>
 
       <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Item image
+        <input
+          className={inputClass}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => onImageChange(event.target.files?.[0])}
+        />
+        <span className="text-xs font-semibold text-slate-500">
+          Optional. If you upload one, you will crop it to the shared 4:3
+          listing size before saving.
+        </span>
+      </label>
+
+      {imageProcessing && (
+        <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-600 ring-1 ring-stone-200">
+          Preparing image...
+        </p>
+      )}
+
+      {imageBase64 && (
+        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+          <img
+            alt="Selected item preview"
+            className="h-44 w-full rounded-xl object-cover"
+            src={imageBase64}
+          />
+          <button
+            className="mt-3 rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-stone-50"
+            type="button"
+            onClick={onImageRemove}
+          >
+            Remove image
+          </button>
+        </div>
+      )}
+
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
         Description
         <textarea
           className={`${inputClass} min-h-32`}
@@ -56,7 +97,7 @@ function ItemForm({
       <button
         className="rounded-2xl bg-emerald-700 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
-        disabled={saving}
+        disabled={saving || imageProcessing}
       >
         {saving ? "Listing..." : "List Item"}
       </button>

@@ -34,13 +34,25 @@ function ItemCard({
           }
         }}
       >
-        <div className="relative h-40 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 p-4">
+        <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+          {item.imageBase64 && (
+            <img
+              alt={item.name}
+              className="absolute inset-0 h-full w-full object-contain"
+              src={item.imageBase64}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
           <div className="flex h-full items-end justify-between">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/85 text-2xl font-black text-emerald-800 shadow-sm">
-              {(item.name || "?").slice(0, 2).toUpperCase()}
+            <div className="relative z-10 p-4">
+              {!item.imageBase64 && (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/85 text-2xl font-black text-emerald-800 shadow-sm">
+                  {(item.name || "?").slice(0, 2).toUpperCase()}
+                </div>
+              )}
             </div>
             {isOwnItem && (
-              <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
+              <span className="relative z-10 m-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
                 Yours
               </span>
             )}
@@ -52,9 +64,6 @@ function ItemCard({
             <h3 className="line-clamp-1 text-lg font-black text-slate-950">
               {item.name}
             </h3>
-            <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-slate-600">
-              {item.description || "No description provided."}
-            </p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">

@@ -3,12 +3,14 @@ import PublicProfileModal from "../profile/PublicProfileModal";
 import ItemCard from "../items/ItemCard";
 import ItemDetailModal from "./ItemDetailModal";
 import ItemForm from "../items/ItemForm";
+import ImageCropModal from "../items/ImageCropModal";
 import EmptyState from "../ui/EmptyState";
 import { usePublicProfileModal } from "../../hooks/usePublicProfileModal";
 import { useItems } from "../../hooks/useItems";
 import { useRequests } from "../../hooks/useRequests";
 import { createItem } from "../../services/itemService";
 import { createRequest } from "../../services/requestService";
+import { cropImageToBase64, readImageFileForCrop } from "../../utils/imageUtils";
 import { itemCategories, isValidItemCategory } from "../../utils/itemCategories";
 
 function MarketplaceView({
@@ -22,6 +24,12 @@ function MarketplaceView({
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [imageBase64, setImageBase64] = useState("");
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropFocalX, setCropFocalX] = useState(50);
+  const [cropFocalY, setCropFocalY] = useState(50);
+  const [cropZoom, setCropZoom] = useState(1);
   const [saving, setSaving] = useState(false);
   const [requestingItemId, setRequestingItemId] = useState("");
   const [requestedItemIds, setRequestedItemIds] = useState([]);
@@ -92,6 +100,7 @@ function MarketplaceView({
         activeCommunity,
         category,
         description,
+        imageBase64,
         name,
         user,
         userProfile,
@@ -100,12 +109,60 @@ function MarketplaceView({
       setName("");
       setCategory("");
       setDescription("");
+      setImageBase64("");
       setShowListForm(false);
       setMessage("Your item is listed.");
     } catch (error) {
       setMessage(error.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageChange = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    setImageProcessing(true);
+    setMessage("");
+
+    try {
+      const imageForCrop = await readImageFileForCrop(file);
+      setCropImage(imageForCrop);
+      setCropFocalX(50);
+      setCropFocalY(50);
+      setCropZoom(1);
+    } catch (error) {
+      setImageBase64("");
+      setMessage(error.message);
+    } finally {
+      setImageProcessing(false);
+    }
+  };
+
+  const applyImageCrop = async () => {
+    if (!cropImage) {
+      return;
+    }
+
+    setImageProcessing(true);
+    setMessage("");
+
+    try {
+      const croppedImage = await cropImageToBase64({
+        focalX: cropFocalX,
+        focalY: cropFocalY,
+        source: cropImage.source,
+        zoom: cropZoom,
+      });
+      setImageBase64(croppedImage);
+      setCropImage(null);
+    } catch (error) {
+      setImageBase64("");
+      setMessage(error.message);
+    } finally {
+      setImageProcessing(false);
     }
   };
 
@@ -273,9 +330,13 @@ function MarketplaceView({
           <ItemForm
             category={category}
             description={description}
+            imageBase64={imageBase64}
+            imageProcessing={imageProcessing}
             name={name}
             onCategoryChange={setCategory}
             onDescriptionChange={setDescription}
+            onImageChange={handleImageChange}
+            onImageRemove={() => setImageBase64("")}
             onNameChange={setName}
             onSubmit={addItem}
             saving={saving}
@@ -345,6 +406,18 @@ function MarketplaceView({
         loading={profileLoading}
         onClose={closeUserProfile}
         profile={profile}
+      />
+      <ImageCropModal
+        crop={cropImage}
+        focalX={cropFocalX}
+        focalY={cropFocalY}
+        onApply={applyImageCrop}
+        onCancel={() => setCropImage(null)}
+        onFocalXChange={setCropFocalX}
+        onFocalYChange={setCropFocalY}
+        onZoomChange={setCropZoom}
+        processing={imageProcessing}
+        zoom={cropZoom}
       />
     </section>
   );
