@@ -21,10 +21,7 @@ import {
 } from "../services/requestService";
 import { fetchUserProfile } from "../services/userService";
 import { formatFirestoreDate } from "../utils/formatDate";
-import {
-  activeBorrowingStatuses,
-  closedRequestStatuses,
-} from "../utils/requestStatus";
+import { activeBorrowingStatuses } from "../utils/requestStatus";
 
 function Requests({ activeCommunity, user }) {
   const [actionId, setActionId] = useState("");
@@ -482,43 +479,13 @@ function Requests({ activeCommunity, user }) {
       (request) => request.status === "pending" && request.borrowerId === user.uid
     )
     .map((request) => ({ direction: "outgoing", request }));
-  const pastRequestMap = new Map();
-
-  [...incomingRequests, ...outgoingRequests]
-    .filter((request) => closedRequestStatuses.includes(request.status))
-    .forEach((request) => {
-      const direction = request.ownerId === user?.uid ? "incoming" : "outgoing";
-      pastRequestMap.set(request.id, { direction, request });
-    });
-
-  const pastRequests = Array.from(pastRequestMap.values());
-
-  const getPastTimestamp = (request) => {
-    if (request.status === "withdrawn") {
-      return formatFirestoreDate(request.withdrawnAt);
-    }
-
-    if (request.status === "rejected") {
-      return formatFirestoreDate(request.rejectedAt);
-    }
-
-    if (request.status === "item_deleted") {
-      return formatFirestoreDate(request.itemDeletedAt);
-    }
-
-    if (request.status === "completed") {
-      return formatFirestoreDate(request.completedAt);
-    }
-
-    return "";
-  };
 
   const renderRequestCard = ({ direction, request }) => (
     <RequestCard
       actionId={actionId}
       direction={direction}
       formatCreatedAt={formatCreatedAt}
-      getPastTimestamp={getPastTimestamp}
+      getPastTimestamp={() => ""}
       key={`${direction}-${request.id}`}
       onAccept={acceptRequest}
       onConfirmHandover={confirmHandover}
@@ -586,15 +553,6 @@ function Requests({ activeCommunity, user }) {
         requests={pendingRequests}
         title="Pending Requests"
       />
-      <RequestSection
-        className="opacity-90"
-        emptyMessage="No closed requests yet."
-        loading={requestsLoading}
-        renderRequestCard={renderRequestCard}
-        requests={pastRequests}
-        title="Past Requests"
-      />
-
       <PickupModal
         modal={pickupModal}
         onClose={closePickupModal}

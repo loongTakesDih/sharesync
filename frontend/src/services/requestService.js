@@ -72,6 +72,8 @@ export const createRequest = async ({ activeCommunity, item, user, userProfile }
   await addDoc(collection(db, "requests"), {
     itemId: freshItem.id,
     itemName: freshItem.name,
+    itemCategory: freshItem.category || "",
+    itemImageBase64: freshItem.imageBase64 || "",
     ownerId: freshItem.ownerId,
     ownerUsername: freshItem.ownerUsername || "",
     ownerEmail: freshItem.ownerEmail || "",

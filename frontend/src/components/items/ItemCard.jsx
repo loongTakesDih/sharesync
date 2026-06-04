@@ -1,18 +1,21 @@
 import { getItemCategoryLabel } from "../../utils/itemCategories";
 
 function ItemCard({
+  actions,
   item,
   onOpenDetail,
   onOpenUserProfile,
   onRequest,
   requested,
   requesting,
+  showDescription = false,
   user,
 }) {
   const isOwnItem = item.ownerId === user.uid;
   const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
   const categoryLabel = getItemCategoryLabel(item);
   const requestDisabled = !item.available || requested || requesting;
+  const canOpenDetail = Boolean(onOpenDetail);
   let requestLabel = "Request";
 
   if (requested) {
@@ -22,14 +25,16 @@ function ItemCard({
   }
 
   return (
-    <article className="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
       <div
-        className="block w-full cursor-pointer text-left"
-        role="button"
-        tabIndex={0}
+        className={`block w-full flex-1 text-left ${
+          canOpenDetail ? "cursor-pointer" : ""
+        }`}
+        role={canOpenDetail ? "button" : undefined}
+        tabIndex={canOpenDetail ? 0 : undefined}
         onClick={() => onOpenDetail?.(item)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
+          if (canOpenDetail && (event.key === "Enter" || event.key === " ")) {
             onOpenDetail?.(item);
           }
         }}
@@ -64,6 +69,11 @@ function ItemCard({
             <h3 className="line-clamp-1 text-lg font-black text-slate-950">
               {item.name}
             </h3>
+            {showDescription && (
+              <p className="mt-2 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-600">
+                {item.description || "No description provided."}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
@@ -90,7 +100,7 @@ function ItemCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
         <strong
           className={
             item.available
@@ -100,6 +110,8 @@ function ItemCard({
         >
           {item.available ? "Available" : "Unavailable"}
         </strong>
+
+        {actions}
 
         {!isOwnItem && (
           <button
