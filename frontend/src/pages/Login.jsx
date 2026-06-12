@@ -21,7 +21,7 @@ function Login({ navigate }) {
 
     try {
       await loginWithEmail(email, password);
-      navigate("/dashboard");
+      navigate("/home");
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -37,7 +37,7 @@ function Login({ navigate }) {
       const userCredential = await loginWithGooglePopup();
       const profile = await fetchUserProfile(userCredential.user.uid);
 
-      navigate(profile ? "/dashboard" : "/complete-profile");
+      navigate(profile ? "/home" : "/complete-profile");
     } catch (error) {
       setMessage(error.message);
     } finally {

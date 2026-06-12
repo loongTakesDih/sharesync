@@ -60,7 +60,7 @@ function Register({ navigate, onProfileCreated }) {
       });
 
       onProfileCreated(profile);
-      navigate("/dashboard");
+      navigate("/home");
     } catch (error) {
       setMessage(error.message);
     } finally {

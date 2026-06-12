@@ -3,11 +3,11 @@ import AppHeader from "./components/layout/AppHeader";
 import { useAuthProfile } from "./hooks/useAuthProfile";
 import { logoutUser } from "./services/authService";
 import "./App.css";
+import Browse from "./pages/Browse";
 import CompleteProfile from "./pages/CompleteProfile";
-import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import History from "./pages/History";
-import Items from "./pages/Items";
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import MyItems from "./pages/MyItems";
 import Profile from "./pages/Profile";
@@ -15,8 +15,8 @@ import Register from "./pages/Register";
 import Requests from "./pages/Requests";
 
 const pagePaths = {
-  dashboard: "/dashboard",
-  items: "/items",
+  home: "/home",
+  browse: "/browse",
   myItems: "/my-items",
   requests: "/requests",
   history: "/history",
@@ -24,10 +24,25 @@ const pagePaths = {
 };
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
+const legacyPrivateRoutes = {
+  "/dashboard": pagePaths.home,
+  "/items": pagePaths.browse,
+};
+const privateRoutes = Object.values(pagePaths);
 
 const getPageFromPath = (pathname) => {
+  const canonicalPath = legacyPrivateRoutes[pathname] || pathname;
   const pageEntry = Object.entries(pagePaths).find(([, path]) => path === pathname);
-  return pageEntry ? pageEntry[0] : "dashboard";
+
+  if (pageEntry) {
+    return pageEntry[0];
+  }
+
+  const legacyPageEntry = Object.entries(pagePaths).find(
+    ([, path]) => path === canonicalPath
+  );
+
+  return legacyPageEntry ? legacyPageEntry[0] : "home";
 };
 
 function App() {
@@ -89,7 +104,22 @@ function App() {
         pathname === "/complete-profile" ||
         pathname === "/")
     ) {
-      redirectTo("/dashboard");
+      redirectTo(pagePaths.home);
+      return;
+    }
+
+    if (user && userProfile && legacyPrivateRoutes[pathname]) {
+      redirectTo(legacyPrivateRoutes[pathname]);
+      return;
+    }
+
+    if (
+      user &&
+      userProfile &&
+      !privateRoutes.includes(pathname) &&
+      pathname !== "/complete-profile"
+    ) {
+      redirectTo(pagePaths.home);
     }
   }, [authReady, navigate, pathname, profileLoading, user, userProfile]);
 
@@ -101,13 +131,30 @@ function App() {
   const activePage = getPageFromPath(pathname);
 
   const renderPage = () => {
-    if (activePage === "items") {
+    if (activePage === "browse") {
       return (
-        <Items
+        <Browse
           activeCommunity={activeCommunity}
           listIntent={listIntent}
           onSearchChange={setMarketplaceSearch}
           searchTerm={marketplaceSearch}
+          user={user}
+          userProfile={userProfile}
+        />
+      );
+    }
+
+    if (activePage === "home") {
+      return (
+        <Home
+          activeCommunity={activeCommunity}
+          navigate={navigate}
+          onCommunityChange={setActiveCommunity}
+          onListItem={() => {
+            navigate(pagePaths.browse);
+            setListIntent((current) => current + 1);
+          }}
+          pagePaths={pagePaths}
           user={user}
           userProfile={userProfile}
         />
@@ -148,16 +195,7 @@ function App() {
       );
     }
 
-    return (
-      <Dashboard
-        activeCommunity={activeCommunity}
-        listIntent={listIntent}
-        onSearchChange={setMarketplaceSearch}
-        searchTerm={marketplaceSearch}
-        user={user}
-        userProfile={userProfile}
-      />
-    );
+    return null;
   };
 
   if (!authReady || profileLoading) {
@@ -206,7 +244,7 @@ function App() {
           navigate={navigate}
           onCommunityChange={setActiveCommunity}
           onListItem={() => {
-            navigate(pagePaths.dashboard);
+            navigate(pagePaths.browse);
             setListIntent((current) => current + 1);
           }}
           onLogout={logout}

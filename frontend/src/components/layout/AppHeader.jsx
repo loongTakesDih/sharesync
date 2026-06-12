@@ -22,7 +22,7 @@ function AppHeader({
 
   const profileLinks = [
     ["myItems", "My Items"],
-    ["requests", "My Requests"],
+    ["requests", "Requests"],
     ["history", "History"],
     ["profile", "Profile"],
   ];
@@ -34,7 +34,7 @@ function AppHeader({
           <button
             className="flex items-center gap-3 rounded-2xl px-1 py-1 text-left"
             type="button"
-            onClick={() => goTo(pagePaths.dashboard)}
+            onClick={() => goTo(pagePaths.home)}
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-lg font-black text-white shadow-sm">
               S
@@ -60,8 +60,8 @@ function AppHeader({
 
         <nav className="flex gap-2 overflow-x-auto lg:ml-4 lg:shrink-0">
           {[
-            ["dashboard", "Home"],
-            ["items", "Browse"],
+            ["home", "Home"],
+            ["browse", "Browse"],
           ].map(([pageKey, label]) => (
             <button
               className={
@@ -88,8 +88,8 @@ function AppHeader({
               value={searchTerm}
               onChange={(event) => {
                 onSearchChange(event.target.value);
-                if (!["dashboard", "items"].includes(activePage)) {
-                  navigate(pagePaths.dashboard);
+                if (activePage !== "browse") {
+                  navigate(pagePaths.browse);
                 }
               }}
             />

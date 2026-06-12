@@ -45,7 +45,7 @@ function CompleteProfile({ navigate, onProfileCreated, user }) {
       });
 
       onProfileCreated(profile);
-      navigate("/dashboard");
+      navigate("/home");
     } catch (error) {
       setMessage(error.message);
     } finally {
