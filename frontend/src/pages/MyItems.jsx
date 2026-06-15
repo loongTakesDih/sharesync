@@ -19,6 +19,7 @@ import {
   getStatusBadgeLabel,
 } from "../utils/requestStatus";
 import { isValidItemCategory, itemCategories } from "../utils/itemCategories";
+import { itemConditions } from "../utils/itemCondition";
 import { cropImageToBase64, readImageFileForCrop } from "../utils/imageUtils";
 
 const inputClass =
@@ -28,7 +29,10 @@ function MyItems({ activeCommunity, user }) {
   const [editingItemId, setEditingItemId] = useState("");
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editCondition, setEditCondition] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPreferredPickupLocation, setEditPreferredPickupLocation] =
+    useState("");
   const [editImageBase64, setEditImageBase64] = useState("");
   const [editAvailable, setEditAvailable] = useState(true);
   const [availabilityId, setAvailabilityId] = useState("");
@@ -68,7 +72,9 @@ function MyItems({ activeCommunity, user }) {
     setEditingItemId(item.id);
     setEditName(item.name);
     setEditCategory(item.category || "");
+    setEditCondition(item.condition || "");
     setEditDescription(item.description || "");
+    setEditPreferredPickupLocation(item.preferredPickupLocation || "");
     setEditImageBase64(item.imageBase64 || "");
     setEditAvailable(item.available);
   };
@@ -77,7 +83,9 @@ function MyItems({ activeCommunity, user }) {
     setEditingItemId("");
     setEditName("");
     setEditCategory("");
+    setEditCondition("");
     setEditDescription("");
+    setEditPreferredPickupLocation("");
     setEditImageBase64("");
     setEditAvailable(true);
     setCropImage(null);
@@ -102,7 +110,9 @@ function MyItems({ activeCommunity, user }) {
       await updateItem(editingItemId, {
         name: editName.trim(),
         category: editCategory,
+        condition: editCondition.trim(),
         description: editDescription.trim(),
+        preferredPickupLocation: editPreferredPickupLocation.trim(),
         imageBase64: editImageBase64,
         available: editAvailable,
       });
@@ -281,6 +291,7 @@ function MyItems({ activeCommunity, user }) {
       <EditItemModal
         available={editAvailable}
         category={editCategory}
+        condition={editCondition}
         description={editDescription}
         imageBase64={editImageBase64}
         imageProcessing={imageProcessing}
@@ -289,11 +300,14 @@ function MyItems({ activeCommunity, user }) {
         onAvailableChange={setEditAvailable}
         onCancel={cancelEditing}
         onCategoryChange={setEditCategory}
+        onConditionChange={setEditCondition}
         onDescriptionChange={setEditDescription}
         onImageChange={handleEditImageChange}
         onImageRemove={() => setEditImageBase64("")}
         onNameChange={setEditName}
+        onPreferredPickupLocationChange={setEditPreferredPickupLocation}
         onSubmit={saveItem}
+        preferredPickupLocation={editPreferredPickupLocation}
         saving={saving}
       />
       <ImageCropModal
@@ -310,13 +324,19 @@ function MyItems({ activeCommunity, user }) {
       />
       <ItemDetailModal
         item={selectedItem}
+        items={items}
         onClose={() => setSelectedItem(null)}
+        onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
         user={user}
       />
       <PublicProfileModal
         loading={profileLoading}
         onClose={closeUserProfile}
+        onOpenItemDetail={(item) => {
+          closeUserProfile();
+          setSelectedItem(item);
+        }}
         profile={profile}
       />
     </section>
@@ -326,6 +346,7 @@ function MyItems({ activeCommunity, user }) {
 function EditItemModal({
   available,
   category,
+  condition,
   description,
   imageBase64,
   imageProcessing,
@@ -334,11 +355,14 @@ function EditItemModal({
   onAvailableChange,
   onCancel,
   onCategoryChange,
+  onConditionChange,
   onDescriptionChange,
   onImageChange,
   onImageRemove,
   onNameChange,
+  onPreferredPickupLocationChange,
   onSubmit,
+  preferredPickupLocation,
   saving,
 }) {
   if (!itemId) {
@@ -399,6 +423,22 @@ function EditItemModal({
           </label>
 
           <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Condition
+            <select
+              className={inputClass}
+              value={condition}
+              onChange={(event) => onConditionChange(event.target.value)}
+            >
+              <option value="">Not specified</option>
+              {itemConditions.map((itemCondition) => (
+                <option key={itemCondition} value={itemCondition}>
+                  {itemCondition}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
             Item image
             <input
               className={inputClass}
@@ -441,6 +481,19 @@ function EditItemModal({
               className={`${inputClass} min-h-32`}
               value={description}
               onChange={(event) => onDescriptionChange(event.target.value)}
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Preferred pickup location
+            <input
+              className={inputClass}
+              type="text"
+              placeholder="Lobby, Block A or Guardhouse"
+              value={preferredPickupLocation}
+              onChange={(event) =>
+                onPreferredPickupLocationChange(event.target.value)
+              }
             />
           </label>
 

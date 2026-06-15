@@ -174,6 +174,7 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
   const hasReturnDetails =
     returnCondition ||
     request.returnInspectionNote ||
+    request.trustRatingDelta !== undefined ||
     request.trustScoreDelta !== undefined ||
     request.issueResolutionNote;
 
@@ -259,8 +260,15 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
                     {getReturnConditionLabel(returnCondition)}
                   </Info>
                 )}
-                {request.trustScoreDelta !== undefined && (
-                  <Info label="Trust score delta">
+                {request.trustRatingDelta !== undefined && (
+                  <Info label="Trust rating delta">
+                    {Number(request.trustRatingDelta) > 0 ? "+" : ""}
+                    {Number(request.trustRatingDelta).toFixed(1)}
+                  </Info>
+                )}
+                {request.trustRatingDelta === undefined &&
+                  request.trustScoreDelta !== undefined && (
+                  <Info label="Legacy trust score delta">
                     {Number(request.trustScoreDelta) > 0 ? "+" : ""}
                     {request.trustScoreDelta}
                   </Info>

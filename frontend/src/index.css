@@ -16,3 +16,89 @@ body {
   color: #0f172a;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
+.trust-rating-star {
+  color: #f59e0b;
+  filter: drop-shadow(0 0 0.35rem rgba(245, 158, 11, 0.35));
+  display: inline-block;
+  position: relative;
+  text-shadow:
+    0 0 0.35rem rgba(245, 158, 11, 0.45),
+    0 0 0.8rem rgba(245, 158, 11, 0.2);
+  transform-origin: 50% 55%;
+  animation:
+    trust-star-glow 2.8s ease-in-out infinite,
+    trust-star-wiggle 4.2s ease-in-out infinite;
+}
+
+.trust-rating-star::after {
+  animation: trust-star-spark 2.8s ease-in-out infinite;
+  color: #fde68a;
+  content: "\2726";
+  font-size: 0.42em;
+  opacity: 0;
+  position: absolute;
+  right: -0.42em;
+  top: -0.22em;
+}
+
+@keyframes trust-star-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0.25rem rgba(245, 158, 11, 0.3));
+    transform: scale(1);
+  }
+
+  45% {
+    filter: drop-shadow(0 0 0.75rem rgba(245, 158, 11, 0.5));
+    transform: scale(1.04);
+  }
+
+  55% {
+    text-shadow:
+      0 0 0.25rem rgba(255, 255, 255, 0.9),
+      0 0 0.9rem rgba(245, 158, 11, 0.35);
+  }
+}
+
+@keyframes trust-star-wiggle {
+  0%,
+  70%,
+  100% {
+    rotate: 0deg;
+  }
+
+  76% {
+    rotate: -7deg;
+  }
+
+  82% {
+    rotate: 6deg;
+  }
+
+  88% {
+    rotate: -3deg;
+  }
+}
+
+@keyframes trust-star-spark {
+  0%,
+  42%,
+  100% {
+    opacity: 0;
+    scale: 0.65;
+    transform: translate(0, 0);
+  }
+
+  52% {
+    opacity: 1;
+    scale: 1;
+    transform: translate(0.08rem, -0.08rem);
+  }
+
+  62% {
+    opacity: 0;
+    scale: 1.2;
+    transform: translate(0.18rem, -0.18rem);
+  }
+}

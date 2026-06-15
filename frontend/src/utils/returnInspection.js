@@ -1,4 +1,5 @@
 export const returnConditionOptions = [
+  { label: "Excellent condition", value: "excellent" },
   { label: "Good condition", value: "good" },
   { label: "Minor wear", value: "minor_wear" },
   { label: "Damaged", value: "damaged" },
@@ -20,33 +21,38 @@ export const getReturnConditionLabel = (condition) =>
 
 export const getTrustAdjustmentForCondition = (condition) =>
   ({
+    excellent: {
+      ratingDelta: 2,
+      statKey: "excellentReturns",
+      completed: true,
+    },
     good: {
-      scoreDelta: 3,
+      ratingDelta: 1.5,
       statKey: "goodReturns",
       completed: true,
     },
     minor_wear: {
-      scoreDelta: 1,
+      ratingDelta: 0.5,
       statKey: "minorWearReturns",
       completed: true,
     },
     damaged: {
-      scoreDelta: -10,
+      ratingDelta: -1,
       statKey: "damagedReturns",
       completed: false,
     },
     missing_part: {
-      scoreDelta: -15,
+      ratingDelta: -1.5,
       statKey: "missingPartReturns",
       completed: false,
     },
     not_returned_properly: {
-      scoreDelta: -20,
+      ratingDelta: -2,
       statKey: "notReturnedIssues",
       completed: false,
     },
     other: {
-      scoreDelta: -8,
+      ratingDelta: -0.5,
       statKey: "otherIssues",
       completed: false,
     },

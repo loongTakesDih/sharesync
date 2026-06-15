@@ -8,7 +8,12 @@ import {
   hasPickupDetails,
 } from "../../utils/requestStatus";
 import { getReturnConditionLabel } from "../../utils/returnInspection";
-import { getTrustLabel, getTrustScore, getTrustStats } from "../../utils/trust";
+import {
+  formatTrustRating,
+  getTrustRating,
+  getTrustStats,
+  renderStars,
+} from "../../utils/trust";
 
 const acceptButtonClass =
   "rounded-2xl bg-emerald-700 px-4 py-2 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60";
@@ -43,7 +48,7 @@ function RequestCard({
     : getOwnerLabel(request);
   const relatedUserId = isIncoming ? request.borrowerId : request.ownerId;
   const pastTimestamp = getPastTimestamp(request);
-  const trustScore = trustProfile ? getTrustScore(trustProfile) : null;
+  const trustRating = trustProfile ? getTrustRating(trustProfile) : null;
   const trustStats = trustProfile ? getTrustStats(trustProfile) : null;
 
   return (
@@ -78,14 +83,15 @@ function RequestCard({
         {isIncoming && request.status === "pending" && trustProfile && (
           <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
             <p className="text-sm font-bold text-slate-700">
-              Trust Score: {trustScore} - {getTrustLabel(trustScore)}
+              Trust Rating: {renderStars(trustRating)}{" "}
+              {formatTrustRating(trustRating)}
             </p>
             <p className="mt-1 text-xs font-medium text-slate-500">
               Completed Borrows: {trustStats.completedBorrows}
             </p>
-            {trustScore < 50 && (
+            {trustRating < 2.5 && (
               <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700 ring-1 ring-red-100">
-                This borrower has a low trust score. Review carefully before
+                This borrower has a low trust rating. Review carefully before
                 accepting.
               </p>
             )}

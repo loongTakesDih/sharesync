@@ -15,9 +15,11 @@ import { isValidItemCategory } from "../utils/itemCategories";
 export const createItem = ({
   activeCommunity,
   category,
+  condition = "",
   description,
   imageBase64 = "",
   name,
+  preferredPickupLocation = "",
   user,
   userProfile,
 }) => {
@@ -29,11 +31,13 @@ export const createItem = ({
     name: name.trim(),
     description: description.trim(),
     category,
+    condition: condition.trim(),
     imageBase64,
     ownerId: user.uid,
     ownerUsername: userProfile.username,
     ownerEmail: user.email,
     community: activeCommunity,
+    preferredPickupLocation: preferredPickupLocation.trim(),
     available: true,
     createdAt: serverTimestamp(),
   });

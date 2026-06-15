@@ -12,6 +12,7 @@ import { createItem } from "../../services/itemService";
 import { createRequest } from "../../services/requestService";
 import { cropImageToBase64, readImageFileForCrop } from "../../utils/imageUtils";
 import { itemCategories, isValidItemCategory } from "../../utils/itemCategories";
+import { closedRequestStatuses } from "../../utils/requestStatus";
 
 function MarketplaceView({
   activeCommunity,
@@ -23,7 +24,9 @@ function MarketplaceView({
 }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [condition, setCondition] = useState("");
   const [description, setDescription] = useState("");
+  const [preferredPickupLocation, setPreferredPickupLocation] = useState("");
   const [imageBase64, setImageBase64] = useState("");
   const [imageProcessing, setImageProcessing] = useState(false);
   const [cropImage, setCropImage] = useState(null);
@@ -47,7 +50,7 @@ function MarketplaceView({
   const { outgoingRequests } = useRequests({ activeCommunity, user });
 
   const pendingRequestedItemIds = outgoingRequests
-    .filter((request) => request.status === "pending")
+    .filter((request) => !closedRequestStatuses.includes(request.status))
     .map((request) => request.itemId);
   const allRequestedItemIds = [
     ...new Set([...pendingRequestedItemIds, ...requestedItemIds]),
@@ -99,16 +102,20 @@ function MarketplaceView({
       await createItem({
         activeCommunity,
         category,
+        condition,
         description,
         imageBase64,
         name,
+        preferredPickupLocation,
         user,
         userProfile,
       });
 
       setName("");
       setCategory("");
+      setCondition("");
       setDescription("");
+      setPreferredPickupLocation("");
       setImageBase64("");
       setShowListForm(false);
       setMessage("Your item is listed.");
@@ -167,6 +174,11 @@ function MarketplaceView({
   };
 
   const requestItem = async (item) => {
+    if (!user) {
+      setMessage("Please log in to request items.");
+      return;
+    }
+
     if (item.ownerId === user.uid) {
       setMessage("You cannot request your own item.");
       return;
@@ -329,16 +341,20 @@ function MarketplaceView({
           </div>
           <ItemForm
             category={category}
+            condition={condition}
             description={description}
             imageBase64={imageBase64}
             imageProcessing={imageProcessing}
             name={name}
             onCategoryChange={setCategory}
+            onConditionChange={setCondition}
             onDescriptionChange={setDescription}
             onImageChange={handleImageChange}
             onImageRemove={() => setImageBase64("")}
             onNameChange={setName}
+            onPreferredPickupLocationChange={setPreferredPickupLocation}
             onSubmit={addItem}
+            preferredPickupLocation={preferredPickupLocation}
             saving={saving}
           />
         </div>
@@ -383,9 +399,6 @@ function MarketplaceView({
                 key={item.id}
                 onOpenDetail={setSelectedItem}
                 onOpenUserProfile={openUserProfile}
-                onRequest={requestItem}
-                requested={allRequestedItemIds.includes(item.id)}
-                requesting={requestingItemId === item.id}
                 user={user}
               />
             ))}
@@ -395,7 +408,9 @@ function MarketplaceView({
 
       <ItemDetailModal
         item={selectedItem}
+        items={items}
         onClose={() => setSelectedItem(null)}
+        onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
         onRequest={requestItem}
         requested={selectedItemIsRequested}
@@ -405,6 +420,10 @@ function MarketplaceView({
       <PublicProfileModal
         loading={profileLoading}
         onClose={closeUserProfile}
+        onOpenItemDetail={(item) => {
+          closeUserProfile();
+          setSelectedItem(item);
+        }}
         profile={profile}
       />
       <ImageCropModal

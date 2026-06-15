@@ -10,7 +10,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { defaultTrustStats } from "../utils/trust";
+import { defaultTrustStats, getTrustRating } from "../utils/trust";
 import { getUsernameLower } from "../utils/validators";
 
 export const fetchUserProfile = async (uid) => {
@@ -25,7 +25,8 @@ export const fetchUserProfile = async (uid) => {
   return {
     ...profile,
     communities: Array.isArray(profile.communities) ? profile.communities : [],
-    reputationScore: profile.reputationScore ?? 100,
+    reputationScore: profile.reputationScore ?? 60,
+    trustRating: getTrustRating(profile),
     trustStats: {
       ...defaultTrustStats,
       ...(profile.trustStats || {}),
@@ -58,7 +59,8 @@ export const createUserProfile = async ({
     photoURL: firebaseUser.photoURL || "",
     communities: [community.trim()],
     createdAt: serverTimestamp(),
-    reputationScore: 100,
+    reputationScore: 60,
+    trustRating: 3,
     trustStats: {
       ...defaultTrustStats,
       lastUpdatedAt: serverTimestamp(),
@@ -71,5 +73,6 @@ export const createUserProfile = async ({
   return {
     ...profile,
     createdAt: null,
+    trustRating: 3,
   };
 };

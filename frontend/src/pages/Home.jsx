@@ -1,8 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import EmptyState from "../components/ui/EmptyState";
+import ItemDetailModal from "../components/marketplace/ItemDetailModal";
+import PublicProfileModal from "../components/profile/PublicProfileModal";
+import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useItems } from "../hooks/useItems";
 import { useMyItems } from "../hooks/useMyItems";
 import { useRequests } from "../hooks/useRequests";
+import { createRequest } from "../services/requestService";
 import { closedRequestStatuses } from "../utils/requestStatus";
 
 function Home({
@@ -14,6 +18,16 @@ function Home({
   user,
   userProfile,
 }) {
+  const [message, setMessage] = useState("");
+  const [requestingItemId, setRequestingItemId] = useState("");
+  const [requestedItemIds, setRequestedItemIds] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const {
+    closeUserProfile,
+    openUserProfile,
+    profile,
+    profileLoading,
+  } = usePublicProfileModal();
   const { items, loading: itemsLoading } = useItems({ activeCommunity, user });
   const { items: myItems, loading: myItemsLoading } = useMyItems({
     activeCommunity,
@@ -24,6 +38,12 @@ function Home({
     outgoingRequests,
     requestsLoading,
   } = useRequests({ activeCommunity, user });
+  const trackedRequestedItemIds = outgoingRequests
+    .filter((request) => !closedRequestStatuses.includes(request.status))
+    .map((request) => request.itemId);
+  const allRequestedItemIds = [
+    ...new Set([...trackedRequestedItemIds, ...requestedItemIds]),
+  ];
 
   const availableItems = useMemo(
     () => items.filter((item) => item.available),
@@ -101,6 +121,71 @@ function Home({
     },
   ];
 
+  const requestItem = async (item) => {
+    if (!user) {
+      setMessage("Please log in to request items.");
+      return;
+    }
+
+    if (item.ownerId === user.uid) {
+      setMessage("You cannot request your own item.");
+      return;
+    }
+
+    if (!item.available) {
+      setMessage("This item is currently unavailable.");
+      return;
+    }
+
+    if (!activeCommunity) {
+      setMessage("Please select a community first.");
+      return;
+    }
+
+    if (!userProfile?.username) {
+      setMessage("Please complete your profile before requesting items.");
+      return;
+    }
+
+    if (allRequestedItemIds.includes(item.id)) {
+      setMessage("You have already requested this item.");
+      return;
+    }
+
+    setRequestingItemId(item.id);
+    setMessage("");
+
+    try {
+      const requestedItemId = await createRequest({
+        activeCommunity,
+        item,
+        user,
+        userProfile,
+      });
+
+      setRequestedItemIds((currentIds) =>
+        currentIds.includes(requestedItemId)
+          ? currentIds
+          : [...currentIds, requestedItemId]
+      );
+      setMessage("Request sent.");
+    } catch (error) {
+      if (error.message === "You have already requested this item.") {
+        setRequestedItemIds((currentIds) =>
+          currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+        );
+      }
+
+      setMessage(error.message);
+    } finally {
+      setRequestingItemId("");
+    }
+  };
+
+  const selectedItemIsRequested = selectedItem
+    ? allRequestedItemIds.includes(selectedItem.id)
+    : false;
+
   return (
     <section className="grid gap-6">
       <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
@@ -174,6 +259,12 @@ function Home({
         ))}
       </div>
 
+      {message && (
+        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
+          {message}
+        </p>
+      )}
+
       <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -217,7 +308,7 @@ function Home({
                 className="overflow-hidden rounded-3xl border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
                 key={item.id}
                 type="button"
-                onClick={() => navigate(pagePaths.browse)}
+                onClick={() => setSelectedItem(item)}
               >
                 <div className="relative aspect-[4/3] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
                   {item.imageBase64 ? (
@@ -248,6 +339,27 @@ function Home({
           </div>
         )}
       </div>
+
+      <ItemDetailModal
+        item={selectedItem}
+        items={items}
+        onClose={() => setSelectedItem(null)}
+        onOpenDetail={setSelectedItem}
+        onOpenUserProfile={openUserProfile}
+        onRequest={requestItem}
+        requested={selectedItemIsRequested}
+        requesting={selectedItem?.id === requestingItemId}
+        user={user}
+      />
+      <PublicProfileModal
+        loading={profileLoading}
+        onClose={closeUserProfile}
+        onOpenItemDetail={(item) => {
+          closeUserProfile();
+          setSelectedItem(item);
+        }}
+        profile={profile}
+      />
     </section>
   );
 }

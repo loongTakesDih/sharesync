@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { defaultTrustStats } from "../utils/trust";
+import { defaultTrustStats, getTrustRating } from "../utils/trust";
 
 export const useAuthProfile = (navigate) => {
   const [user, setUser] = useState(null);
@@ -48,7 +48,8 @@ export const useAuthProfile = (navigate) => {
           communities: Array.isArray(profile.communities)
             ? profile.communities
             : [],
-          reputationScore: profile.reputationScore ?? 100,
+          reputationScore: profile.reputationScore ?? 60,
+          trustRating: getTrustRating(profile),
           trustStats: {
             ...defaultTrustStats,
             ...(profile.trustStats || {}),

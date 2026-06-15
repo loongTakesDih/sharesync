@@ -1,16 +1,12 @@
 import { useProfileSummary } from "../../hooks/useProfileSummary";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
-import {
-  getTrustBadgeClass,
-  getTrustLabel,
-  getTrustScore,
-  getTrustStats,
-} from "../../utils/trust";
+import { getTrustRating, getTrustStats } from "../../utils/trust";
+import TrustRatingMark from "./TrustRatingMark";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
 
-function PublicProfileModal({ loading, onClose, profile }) {
+function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
   const {
     error,
     loading: summaryLoading,
@@ -24,8 +20,7 @@ function PublicProfileModal({ loading, onClose, profile }) {
     return null;
   }
 
-  const score = getTrustScore(profile);
-  const trustLabel = getTrustLabel(score);
+  const trustRating = getTrustRating(profile);
   const stats = getTrustStats(profile);
   const availableItems = ownedItems.filter((item) => item.available === true);
 
@@ -53,9 +48,7 @@ function PublicProfileModal({ loading, onClose, profile }) {
               <h2 className="text-2xl font-black tracking-tight text-slate-950">
                 {profile.username || "ShareSync user"}
               </h2>
-              <Badge className={`mt-2 ${getTrustBadgeClass(score)}`}>
-                {score} / 100 - {trustLabel}
-              </Badge>
+              <TrustRatingMark className="mt-1" rating={trustRating} />
               <p className="mt-2 text-sm font-semibold text-slate-500">
                 Joined {formatFirestoreDate(profile.createdAt, "recently")}
               </p>
@@ -83,9 +76,7 @@ function PublicProfileModal({ loading, onClose, profile }) {
         )}
 
         <Section title="Trust Overview">
-          <div className="grid gap-3 sm:grid-cols-4">
-            <Stat label="Trust Score" value={`${score} / 100`} />
-            <Stat label="Trust Label" value={trustLabel} />
+          <div className="grid gap-3 sm:grid-cols-2">
             <Stat label="Completed Borrows" value={stats.completedBorrows} />
             <Stat label="Total Return Issues" value={stats.returnIssues} />
           </div>
@@ -93,6 +84,7 @@ function PublicProfileModal({ loading, onClose, profile }) {
 
         <Section title="Return Condition Breakdown">
           <div className="grid gap-3 sm:grid-cols-3">
+            <Stat label="Excellent Condition" value={stats.excellentReturns} />
             <Stat label="Good Condition" value={stats.goodReturns} />
             <Stat label="Minor Wear" value={stats.minorWearReturns} />
             <Stat label="Damaged" value={stats.damagedReturns} />
@@ -111,34 +103,36 @@ function PublicProfileModal({ loading, onClose, profile }) {
           )}
           <div className="grid gap-3 sm:grid-cols-2">
             {availableItems.slice(0, 6).map((item) => (
-              <article
-                className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50"
+              <button
+                className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md disabled:hover:translate-y-0 disabled:hover:border-stone-200 disabled:hover:shadow-sm"
+                disabled={!onOpenItemDetail}
                 key={item.id}
+                type="button"
+                onClick={() => onOpenItemDetail?.(item)}
               >
-                <div className="relative h-28 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
-                  {item.imageBase64 ? (
+                {item.imageBase64 ? (
+                  <div className="bg-white">
                     <img
                       alt={item.name}
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className="block h-auto w-full"
                       src={item.imageBase64}
                     />
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="flex aspect-square items-center justify-center bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
                     <div className="flex h-full items-center justify-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 text-xl font-black text-emerald-800 shadow-sm">
                         {(item.name || "?").slice(0, 2).toUpperCase()}
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <div className="p-4">
+                <div className="grid gap-3 p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-black text-slate-950">{item.name}</h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-600">
-                        {item.description || "No description provided."}
-                      </p>
-                    </div>
+                    <h3 className="line-clamp-2 font-black text-slate-950">
+                      {item.name}
+                    </h3>
                     <Badge
                       className={
                         item.available
@@ -149,12 +143,11 @@ function PublicProfileModal({ loading, onClose, profile }) {
                       {item.available ? "Available" : "Unavailable"}
                     </Badge>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Chip>{getItemCategoryLabel(item)}</Chip>
-                    <Chip>{item.community}</Chip>
                   </div>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </Section>

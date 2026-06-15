@@ -5,24 +5,13 @@ function ItemCard({
   item,
   onOpenDetail,
   onOpenUserProfile,
-  onRequest,
-  requested,
-  requesting,
   showDescription = false,
   user,
 }) {
-  const isOwnItem = item.ownerId === user.uid;
+  const isOwnItem = item.ownerId === user?.uid;
   const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
   const categoryLabel = getItemCategoryLabel(item);
-  const requestDisabled = !item.available || requested || requesting;
   const canOpenDetail = Boolean(onOpenDetail);
-  let requestLabel = "Request";
-
-  if (requested) {
-    requestLabel = "Requested";
-  } else if (requesting) {
-    requestLabel = "Requesting...";
-  }
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
@@ -113,14 +102,13 @@ function ItemCard({
 
         {actions}
 
-        {!isOwnItem && (
+        {canOpenDetail && (
           <button
-            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
+            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
             type="button"
-            disabled={requestDisabled}
-            onClick={() => onRequest(item)}
+            onClick={() => onOpenDetail(item)}
           >
-            {requestLabel}
+            View Details
           </button>
         )}
       </div>

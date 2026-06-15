@@ -1,16 +1,10 @@
-import Badge from "../components/ui/Badge";
+import TrustRatingMark from "../components/profile/TrustRatingMark";
 import { useProfileSummary } from "../hooks/useProfileSummary";
 import { formatFirestoreDate } from "../utils/formatDate";
-import {
-  getTrustBadgeClass,
-  getTrustLabel,
-  getTrustScore,
-  getTrustStats,
-} from "../utils/trust";
+import { getTrustRating, getTrustStats } from "../utils/trust";
 
 function Profile({ activeCommunity, user, userProfile }) {
-  const trustScore = getTrustScore(userProfile);
-  const trustLabel = getTrustLabel(trustScore);
+  const trustRating = getTrustRating(userProfile);
   const trustStats = getTrustStats(userProfile);
   const { error, lendingStats } = useProfileSummary(user.uid, {
     includeBorrowerRequests: false,
@@ -21,8 +15,7 @@ function Profile({ activeCommunity, user, userProfile }) {
     <section className="grid gap-6">
       <ProfileHeader
         activeCommunity={activeCommunity}
-        trustLabel={trustLabel}
-        trustScore={trustScore}
+        trustRating={trustRating}
         userProfile={userProfile}
       />
 
@@ -33,9 +26,7 @@ function Profile({ activeCommunity, user, userProfile }) {
       )}
 
       <Section title="Trust Overview">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Trust Score" value={`${trustScore} / 100`} />
-          <StatCard label="Trust Label" value={trustLabel} />
+        <div className="grid gap-3 sm:grid-cols-2">
           <StatCard
             label="Completed Borrows"
             value={trustStats.completedBorrows}
@@ -53,6 +44,10 @@ function Profile({ activeCommunity, user, userProfile }) {
         subtitle="Total return issues is a summary. These cards show the condition categories behind it."
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            label="Excellent Condition Returns"
+            value={trustStats.excellentReturns}
+          />
           <StatCard
             label="Good Condition Returns"
             value={trustStats.goodReturns}
@@ -92,7 +87,7 @@ function Profile({ activeCommunity, user, userProfile }) {
   );
 }
 
-function ProfileHeader({ activeCommunity, trustLabel, trustScore, userProfile }) {
+function ProfileHeader({ activeCommunity, trustRating, userProfile }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
       <div className="bg-gradient-to-br from-emerald-50 via-white to-amber-50 px-6 py-8 sm:px-8">
@@ -125,13 +120,8 @@ function ProfileHeader({ activeCommunity, trustLabel, trustScore, userProfile })
             </div>
           </div>
           <div className="rounded-3xl border border-white bg-white/80 p-5 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Trust Score</p>
-            <p className="mt-1 text-3xl font-black text-slate-950">
-              {trustScore} / 100
-            </p>
-            <Badge className={`mt-2 ${getTrustBadgeClass(trustScore)}`}>
-              {trustLabel}
-            </Badge>
+            <p className="text-sm font-bold text-slate-500">Trust Rating</p>
+            <TrustRatingMark className="mt-1" rating={trustRating} size="lg" />
           </div>
         </div>
       </div>

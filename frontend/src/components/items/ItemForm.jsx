@@ -1,20 +1,25 @@
 import { itemCategories } from "../../utils/itemCategories";
+import { itemConditions } from "../../utils/itemCondition";
 
 const inputClass =
   "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
 
 function ItemForm({
   category,
+  condition,
   description,
   imageBase64,
   imageProcessing,
   name,
   onCategoryChange,
+  onConditionChange,
   onDescriptionChange,
   onImageChange,
   onImageRemove,
   onNameChange,
+  onPreferredPickupLocationChange,
   onSubmit,
+  preferredPickupLocation,
   saving,
 }) {
   return (
@@ -42,6 +47,22 @@ function ItemForm({
           {itemCategories.map((itemCategory) => (
             <option key={itemCategory} value={itemCategory}>
               {itemCategory}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Condition
+        <select
+          className={inputClass}
+          value={condition}
+          onChange={(event) => onConditionChange(event.target.value)}
+        >
+          <option value="">Not specified</option>
+          {itemConditions.map((itemCondition) => (
+            <option key={itemCondition} value={itemCondition}>
+              {itemCondition}
             </option>
           ))}
         </select>
@@ -88,10 +109,27 @@ function ItemForm({
         Description
         <textarea
           className={`${inputClass} min-h-32`}
-          placeholder="Add condition, size, what is included, or pickup notes."
+          placeholder="Add size, what is included, or borrowing notes."
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
         />
+      </label>
+
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Preferred pickup location
+        <input
+          className={inputClass}
+          type="text"
+          placeholder="Lobby, Block A or Guardhouse"
+          value={preferredPickupLocation}
+          onChange={(event) =>
+            onPreferredPickupLocationChange(event.target.value)
+          }
+        />
+        <span className="text-xs font-semibold text-slate-500">
+          Optional. The final pickup details can still be arranged after a
+          request is accepted.
+        </span>
       </label>
 
       <button

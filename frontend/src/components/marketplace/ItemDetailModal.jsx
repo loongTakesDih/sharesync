@@ -1,131 +1,339 @@
+import { useEffect, useState } from "react";
 import Badge from "../ui/Badge";
+import TrustRatingMark from "../profile/TrustRatingMark";
+import { fetchUserProfile } from "../../services/userService";
+import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
+import { getItemConditionLabel } from "../../utils/itemCondition";
+import { getTrustRating, getTrustStats } from "../../utils/trust";
+
+const DetailRow = ({ label, value }) => (
+  <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+    <dt className="text-xs font-black uppercase tracking-wide text-slate-500">
+      {label}
+    </dt>
+    <dd className="mt-1 text-sm font-bold text-slate-900">{value}</dd>
+  </div>
+);
+
+function SimilarListingCard({ item, onOpenDetail }) {
+  return (
+    <button
+      className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+      type="button"
+      onClick={() => onOpenDetail(item)}
+    >
+      <div className="relative aspect-[4/3] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+        {item.imageBase64 ? (
+          <img
+            alt={item.name}
+            className="absolute inset-0 h-full w-full object-contain"
+            src={item.imageBase64}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 text-xl font-black text-emerald-800 shadow-sm">
+              {(item.name || "?").slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="grid gap-1 p-3">
+        <h4 className="line-clamp-1 text-sm font-black text-slate-950">
+          {item.name}
+        </h4>
+        <p className="line-clamp-1 text-xs font-bold text-slate-500">
+          {getItemCategoryLabel(item)}
+        </p>
+      </div>
+    </button>
+  );
+}
 
 function ItemDetailModal({
   item,
+  items = [],
   onClose,
+  onOpenDetail,
   onOpenUserProfile,
   onRequest,
   requested,
   requesting,
   user,
 }) {
+  const [ownerProfileState, setOwnerProfileState] = useState({
+    ownerId: "",
+    profile: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!item?.ownerId) {
+      return undefined;
+    }
+
+    fetchUserProfile(item.ownerId)
+      .then((profile) => {
+        if (!cancelled) {
+          setOwnerProfileState({
+            ownerId: item.ownerId,
+            profile,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOwnerProfileState({
+            ownerId: item.ownerId,
+            profile: null,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item?.ownerId]);
+
   if (!item) {
     return null;
   }
 
-  const isOwnItem = item.ownerId === user.uid;
+  const isOwnItem = item.ownerId === user?.uid;
+  const ownerProfile =
+    ownerProfileState.ownerId === item.ownerId ? ownerProfileState.profile : null;
   const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
   const categoryLabel = getItemCategoryLabel(item);
-  const requestDisabled = isOwnItem || !item.available || requested || requesting;
-  let helperText = "Send a request to borrow this item from your neighbor.";
-  let requestLabel = "Request Item";
+  const conditionLabel = getItemConditionLabel(item);
+  const ownerTrustRating = ownerProfile ? getTrustRating(ownerProfile) : null;
+  const ownerTrustStats = ownerProfile ? getTrustStats(ownerProfile) : null;
+  const listedDate = formatFirestoreDate(item.createdAt, "Not listed");
+  const preferredPickupLocation =
+    item.preferredPickupLocation || "To be arranged";
+  const canRequest =
+    Boolean(user) &&
+    !isOwnItem &&
+    item.available &&
+    !requested &&
+    !requesting &&
+    Boolean(onRequest);
+  const similarListings = items
+    .filter(
+      (candidate) =>
+        candidate.id !== item.id &&
+        candidate.available &&
+        candidate.category === item.category &&
+        (!item.community || candidate.community === item.community)
+    )
+    .slice(0, 4);
 
-  if (isOwnItem) {
-    helperText = "This is your listing.";
+  let requestLabel = "Request to Borrow";
+  let helperText =
+    "Pickup details can be arranged after the owner accepts your request.";
+
+  if (!user) {
+    requestLabel = "Login to request";
+    helperText = "Log in to send a borrowing request for this item.";
+  } else if (isOwnItem) {
+    requestLabel = "This is your item";
+    helperText = "Manage this listing from My Items.";
   } else if (!item.available) {
-    helperText = "This item is not available right now.";
+    requestLabel = "Currently unavailable";
+    helperText = "This item is not available for new requests right now.";
   } else if (requested) {
-    helperText = "You already have a pending request for this item.";
-    requestLabel = "Requested";
+    requestLabel = "Request already sent";
+    helperText = "You already have an active request for this item.";
   } else if (requesting) {
-    requestLabel = "Requesting...";
+    requestLabel = "Sending request...";
   }
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/45 px-4 py-6">
       <div
-        className="max-h-[calc(100svh-3rem)] w-full max-w-2xl overflow-auto rounded-3xl border border-stone-200 bg-white shadow-2xl"
+        className="max-h-[calc(100svh-3rem)] w-full max-w-6xl overflow-auto rounded-3xl border border-stone-200 bg-stone-50 shadow-2xl"
         role="dialog"
         aria-modal="true"
       >
-        <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
-          {item.imageBase64 && (
-            <img
-              alt={item.name}
-              className="absolute inset-0 h-full w-full object-contain"
-              src={item.imageBase64}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
-          <div className="relative z-10 flex h-full items-end justify-between p-6">
-            {!item.imageBase64 && (
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/85 text-3xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
-                {(item.name || "?").slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div />
-            <Badge
-              className={
-                item.available
-                  ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                  : "bg-stone-100 text-slate-600 ring-stone-200"
-              }
-            >
-              {item.available ? "Available" : "Unavailable"}
-            </Badge>
+        <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-stone-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
+              Item Details
+            </p>
+            <h2 className="line-clamp-1 text-xl font-black text-slate-950">
+              {item.name}
+            </h2>
           </div>
+          <button
+            className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50"
+            type="button"
+            onClick={onClose}
+          >
+            Close
+          </button>
         </div>
 
-        <div className="grid gap-6 p-6 sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                {item.community}
-              </p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                {item.name}
-              </h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-bold text-amber-800 ring-1 ring-amber-100">
-                  {categoryLabel}
-                </span>
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-bold text-slate-600 ring-1 ring-stone-200">
-                  {item.community}
-                </span>
+        <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+          <div className="grid gap-5">
+            <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+              <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+                {item.imageBase64 ? (
+                  <img
+                    alt={item.name}
+                    className="absolute inset-0 h-full w-full object-contain"
+                    src={item.imageBase64}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="grid h-28 w-28 place-items-center rounded-3xl bg-white/85 text-4xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
+                      {(item.name || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="mt-2 text-sm font-semibold text-slate-500">
-                Listed by{" "}
+
+              <div className="grid gap-5 p-5 sm:p-6">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                    {item.community || "Community"}
+                  </p>
+                  <h3 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+                    {item.name}
+                  </h3>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Badge className="bg-amber-50 text-amber-800 ring-amber-100">
+                      {categoryLabel}
+                    </Badge>
+                    <Badge className="bg-teal-50 text-teal-800 ring-teal-100">
+                      {conditionLabel}
+                    </Badge>
+                    <Badge
+                      className={
+                        item.available
+                          ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                          : "bg-stone-100 text-slate-600 ring-stone-200"
+                      }
+                    >
+                      {item.available ? "Available" : "Unavailable"}
+                    </Badge>
+                  </div>
+                </div>
+
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  <DetailRow label="Listed by" value={ownerLabel} />
+                  <DetailRow label="Listed date" value={listedDate} />
+                  <DetailRow label="Community" value={item.community || "-"} />
+                  <DetailRow
+                    label="Preferred pickup location"
+                    value={preferredPickupLocation}
+                  />
+                </dl>
+
+                <section className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
+                  <h4 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                    Description
+                  </h4>
+                  <p className="mt-2 whitespace-pre-wrap leading-7 text-slate-700">
+                    {item.description || "No description provided."}
+                  </p>
+                </section>
+              </div>
+            </div>
+
+            <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+              <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                Meet the Lender
+              </p>
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950">
+                    {ownerLabel}
+                  </h3>
+                  {ownerTrustRating !== null && (
+                    <TrustRatingMark
+                      className="mt-1"
+                      rating={ownerTrustRating}
+                      size="sm"
+                    />
+                  )}
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    ShareSync community member
+                  </p>
+                  {ownerTrustStats && (
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      Completed borrows: {ownerTrustStats.completedBorrows}
+                    </p>
+                  )}
+                </div>
                 <button
-                  className="font-bold text-emerald-800 underline-offset-4 hover:underline"
+                  className="self-start rounded-2xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
                   type="button"
                   onClick={() =>
                     onOpenUserProfile?.(item.ownerId, {
                       photoURL: item.ownerPhotoURL || "",
+                      trustRating: ownerProfile?.trustRating,
+                      trustStats: ownerProfile?.trustStats,
                       username: ownerLabel,
                     })
                   }
                 >
-                  {ownerLabel}
+                  View Profile
                 </button>
-              </p>
-            </div>
-            <button
-              className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-stone-50"
-              type="button"
-              onClick={onClose}
-            >
-              Close
-            </button>
-          </div>
+              </div>
+            </section>
 
-          <p className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-stone-50/70 p-4 leading-7 text-slate-700">
-            {item.description || "No description provided."}
-          </p>
-
-          <div className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-medium text-emerald-950">{helperText}</p>
-            {!isOwnItem && (
-              <button
-                className="rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
-                type="button"
-                disabled={requestDisabled}
-                onClick={() => onRequest(item)}
-              >
-                {requestLabel}
-              </button>
+            {similarListings.length > 0 && (
+              <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                      Similar listings
+                    </p>
+                    <h3 className="mt-1 text-xl font-black text-slate-950">
+                      More in {categoryLabel}
+                    </h3>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {similarListings.map((similarItem) => (
+                    <SimilarListingCard
+                      item={similarItem}
+                      key={similarItem.id}
+                      onOpenDetail={onOpenDetail}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
           </div>
+
+          <aside className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-black uppercase tracking-wide text-slate-500">
+                Borrowing
+              </p>
+              <Badge
+                className={
+                  item.available
+                    ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                    : "bg-stone-100 text-slate-600 ring-stone-200"
+                }
+              >
+                {item.available ? "Available" : "Unavailable"}
+              </Badge>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-slate-600">
+              {helperText}
+            </p>
+            <button
+              className="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
+              type="button"
+              disabled={!canRequest}
+              onClick={() => onRequest(item)}
+            >
+              {requestLabel}
+            </button>
+          </aside>
         </div>
       </div>
     </div>
