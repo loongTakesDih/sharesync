@@ -57,6 +57,8 @@ function ItemDetailModal({
   onOpenDetail,
   onOpenUserProfile,
   onRequest,
+  ownerActions,
+  ownerStatus,
   requested,
   requesting,
   user,
@@ -310,29 +312,35 @@ function ItemDetailModal({
           <aside className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-black uppercase tracking-wide text-slate-500">
-                Borrowing
+                {isOwnItem ? "Listing management" : "Borrowing"}
               </p>
-              <Badge
-                className={
-                  item.available
-                    ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                    : "bg-stone-100 text-slate-600 ring-stone-200"
-                }
-              >
-                {item.available ? "Available" : "Unavailable"}
-              </Badge>
+              {ownerStatus || (
+                <Badge
+                  className={
+                    item.available
+                      ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                      : "bg-stone-100 text-slate-600 ring-stone-200"
+                  }
+                >
+                  {item.available ? "Available" : "Unavailable"}
+                </Badge>
+              )}
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">
               {helperText}
             </p>
-            <button
-              className="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
-              type="button"
-              disabled={!canRequest}
-              onClick={() => onRequest(item)}
-            >
-              {requestLabel}
-            </button>
+            {isOwnItem && ownerActions ? (
+              <div className="mt-5 grid gap-3">{ownerActions}</div>
+            ) : (
+              <button
+                className="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
+                type="button"
+                disabled={!canRequest}
+                onClick={() => onRequest(item)}
+              >
+                {requestLabel}
+              </button>
+            )}
           </aside>
         </div>
       </div>

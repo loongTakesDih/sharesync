@@ -68,6 +68,10 @@ function MyItems({ activeCommunity, user }) {
     return map;
   }, [incomingRequests]);
 
+  const selectedActiveRequest = selectedItem
+    ? activeRequestByItemId.get(selectedItem.id)
+    : null;
+
   const startEditing = (item) => {
     setEditingItemId(item.id);
     setEditName(item.name);
@@ -131,13 +135,15 @@ function MyItems({ activeCommunity, user }) {
     );
 
     if (!confirmed) {
-      return;
+      return false;
     }
 
     try {
       await deleteItemDocument({ activeCommunity, itemId, user });
+      return true;
     } catch (error) {
       alert(error.message);
+      return false;
     }
   };
 
@@ -146,6 +152,11 @@ function MyItems({ activeCommunity, user }) {
 
     try {
       await toggleItemAvailability(item.id, !item.available);
+      setSelectedItem((currentItem) =>
+        currentItem?.id === item.id
+          ? { ...currentItem, available: !item.available }
+          : currentItem
+      );
     } catch (error) {
       alert(error.message);
     } finally {
@@ -235,58 +246,16 @@ function MyItems({ activeCommunity, user }) {
           </div>
         )}
 
-        {items.map((item) => {
-          const activeRequest = activeRequestByItemId.get(item.id);
-
-          return (
-            <ItemCard
-              actions={
-                <div className="ml-auto flex flex-wrap justify-end gap-2">
-                  {activeRequest && (
-                    <Badge
-                      className={`text-xs ${getStatusBadgeClass(
-                        activeRequest.status
-                      )}`}
-                    >
-                      {getStatusBadgeLabel(activeRequest.status)}
-                    </Badge>
-                  )}
-                  <button
-                    className="rounded-2xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                    type="button"
-                    onClick={() => startEditing(item)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="rounded-2xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    type="button"
-                    disabled={availabilityId === item.id}
-                    onClick={() => toggleAvailability(item)}
-                  >
-                    {availabilityId === item.id
-                      ? "Updating..."
-                      : item.available
-                        ? "Mark unavailable"
-                        : "Mark available"}
-                  </button>
-                  <button
-                    className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100"
-                    type="button"
-                    onClick={() => deleteItem(item.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              }
-              item={item}
-              key={item.id}
-              onOpenDetail={setSelectedItem}
-              onOpenUserProfile={openUserProfile}
-              user={user}
-            />
-          );
-        })}
+        {items.map((item) => (
+          <ItemCard
+            item={item}
+            key={item.id}
+            onOpenDetail={setSelectedItem}
+            onOpenUserProfile={openUserProfile}
+            showAvailability={false}
+            user={user}
+          />
+        ))}
       </div>
       <EditItemModal
         available={editAvailable}
@@ -328,6 +297,37 @@ function MyItems({ activeCommunity, user }) {
         onClose={() => setSelectedItem(null)}
         onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
+        ownerActions={
+          selectedItem && (
+            <OwnerManagementActions
+              availabilityId={availabilityId}
+              item={selectedItem}
+              onDelete={async (itemId) => {
+                const deleted = await deleteItem(itemId);
+
+                if (deleted) {
+                  setSelectedItem(null);
+                }
+              }}
+              onEdit={(item) => {
+                startEditing(item);
+                setSelectedItem(null);
+              }}
+              onToggleAvailability={toggleAvailability}
+            />
+          )
+        }
+        ownerStatus={
+          selectedActiveRequest ? (
+            <Badge
+              className={`text-xs ${getStatusBadgeClass(
+                selectedActiveRequest.status
+              )}`}
+            >
+              {getStatusBadgeLabel(selectedActiveRequest.status)}
+            </Badge>
+          ) : undefined
+        }
         user={user}
       />
       <PublicProfileModal
@@ -526,6 +526,45 @@ function EditItemModal({
         </form>
       </div>
     </div>
+  );
+}
+
+function OwnerManagementActions({
+  availabilityId,
+  item,
+  onDelete,
+  onEdit,
+  onToggleAvailability,
+}) {
+  return (
+    <>
+      <button
+        className="w-full rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+        type="button"
+        onClick={() => onEdit(item)}
+      >
+        Edit listing
+      </button>
+      <button
+        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+        type="button"
+        disabled={availabilityId === item.id}
+        onClick={() => onToggleAvailability(item)}
+      >
+        {availabilityId === item.id
+          ? "Updating..."
+          : item.available
+            ? "Mark unavailable"
+            : "Mark available"}
+      </button>
+      <button
+        className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100"
+        type="button"
+        onClick={() => onDelete(item.id)}
+      >
+        Delete listing
+      </button>
+    </>
   );
 }
 

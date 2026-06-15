@@ -5,6 +5,7 @@ function ItemCard({
   item,
   onOpenDetail,
   onOpenUserProfile,
+  showAvailability = true,
   showDescription = false,
   user,
 }) {
@@ -12,6 +13,7 @@ function ItemCard({
   const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
   const categoryLabel = getItemCategoryLabel(item);
   const canOpenDetail = Boolean(onOpenDetail);
+  const hasFooterLeadingContent = showAvailability || Boolean(actions);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
@@ -89,16 +91,22 @@ function ItemCard({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-        <strong
-          className={
-            item.available
-              ? "inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-200"
-              : "inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-stone-200"
-          }
-        >
-          {item.available ? "Available" : "Unavailable"}
-        </strong>
+      <div
+        className={`flex flex-wrap items-center gap-3 border-t border-stone-100 px-5 py-4 ${
+          hasFooterLeadingContent ? "justify-between" : "justify-end"
+        }`}
+      >
+        {showAvailability && (
+          <strong
+            className={
+              item.available
+                ? "inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-200"
+                : "inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-stone-200"
+            }
+          >
+            {item.available ? "Available" : "Unavailable"}
+          </strong>
+        )}
 
         {actions}
 
