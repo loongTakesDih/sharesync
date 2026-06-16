@@ -25,6 +25,16 @@ function CompleteProfile({ navigate, onProfileCreated, user }) {
       return;
     }
 
+    if (
+      !community.area ||
+      !community.state ||
+      !community.country ||
+      !community.type
+    ) {
+      setMessage("Please complete your community details.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -77,6 +87,7 @@ function CompleteProfile({ navigate, onProfileCreated, user }) {
           disabled={saving}
           selectedCommunity={community}
           onChange={setCommunity}
+          user={user}
         />
         <button className={primaryButtonClass} type="submit" disabled={saving}>
           {saving ? "Saving..." : "Complete profile"}

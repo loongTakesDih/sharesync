@@ -23,7 +23,8 @@ export const normalizeCommunityName = (name = "") =>
 const compactCommunityName = (name = "") =>
   normalizeCommunityName(name).replace(/[^a-z0-9]/g, "");
 
-export const cleanCommunityText = (value = "") => value.trim().replace(/\s+/g, " ");
+export const cleanCommunityText = (value = "") =>
+  value.trim().replace(/\s+/g, " ");
 
 const normalizeLocation = (location) => {
   const lat = Number(location?.lat);
@@ -36,21 +37,49 @@ const normalizeLocation = (location) => {
   return { lat, lng };
 };
 
+const getOsmExternalId = (result) =>
+  result?.osm_type && result?.osm_id
+    ? `${result.osm_type}/${result.osm_id}`
+    : "";
+
 export const toCommunitySummary = (community) => {
   if (!community) {
     return null;
   }
 
   const location = normalizeLocation(community.location);
+  const name = cleanCommunityText(
+    community.name || community.displayName || community.activeCommunity || ""
+  );
 
   return {
     communityId: community.communityId || community.id || "",
-    name: cleanCommunityText(community.name || community.activeCommunity || ""),
+    name,
+    displayName: cleanCommunityText(community.displayName || name),
     area: cleanCommunityText(community.area || ""),
     state: cleanCommunityText(community.state || ""),
     country: cleanCommunityText(community.country || "Malaysia"),
     type: cleanCommunityText(community.type || ""),
+    source: cleanCommunityText(community.source || ""),
+    externalId: cleanCommunityText(community.externalId || ""),
     ...(location ? { location } : {}),
+  };
+};
+
+export const toUserCommunitySummary = (community) => {
+  const summary = toCommunitySummary(community);
+
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    communityId: summary.communityId,
+    name: summary.name,
+    area: summary.area,
+    state: summary.state,
+    country: summary.country,
+    type: summary.type,
   };
 };
 
@@ -66,7 +95,9 @@ export const getCommunityLabel = (community) => {
 
   const details = [summary.area, summary.state, summary.type].filter(Boolean);
 
-  return details.length ? `${summary.name} - ${details.join(", ")}` : summary.name;
+  return details.length
+    ? `${summary.name} - ${details.join(", ")}`
+    : summary.name;
 };
 
 export const getActiveCommunities = async () => {
@@ -92,13 +123,14 @@ export const searchActiveCommunities = async (searchTerm = "") => {
   const communities = await getActiveCommunities();
 
   if (!normalizedSearch) {
-    return communities.slice(0, 12);
+    return communities.slice(0, 8);
   }
 
   return communities
     .filter((community) =>
       [
         community.name,
+        community.displayName,
         community.area,
         community.state,
         community.country,
@@ -109,7 +141,31 @@ export const searchActiveCommunities = async (searchTerm = "") => {
           normalizeCommunityName(value).includes(normalizedSearch)
         )
     )
-    .slice(0, 12);
+    .slice(0, 8);
+};
+
+const findCommunityByExternalId = async (externalId) => {
+  if (!externalId) {
+    return null;
+  }
+
+  const externalQuery = query(
+    collection(db, "communities"),
+    where("externalId", "==", externalId),
+    limit(1)
+  );
+  const externalSnapshot = await getDocs(externalQuery);
+
+  if (externalSnapshot.empty) {
+    return null;
+  }
+
+  const communityDoc = externalSnapshot.docs[0];
+
+  return toCommunitySummary({
+    communityId: communityDoc.id,
+    ...communityDoc.data(),
+  });
 };
 
 export const findDuplicateCommunity = async (name) => {
@@ -157,6 +213,151 @@ export const findDuplicateCommunity = async (name) => {
     : null;
 };
 
+const getOsmName = (result) => {
+  const address = result.address || {};
+
+  return cleanCommunityText(
+    result.name ||
+      address.neighbourhood ||
+      address.suburb ||
+      address.residential ||
+      address.building ||
+      address.amenity ||
+      address.road ||
+      result.display_name?.split(",")[0] ||
+      ""
+  );
+};
+
+const getOsmArea = (result) => {
+  const address = result.address || {};
+
+  return cleanCommunityText(
+    address.suburb ||
+      address.neighbourhood ||
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county ||
+      ""
+  );
+};
+
+export const toOsmCommunityDraft = (result) => {
+  const address = result.address || {};
+  const name = getOsmName(result);
+  const location = normalizeLocation({
+    lat: result.lat,
+    lng: result.lon,
+  });
+
+  return toCommunitySummary({
+    name,
+    displayName: result.display_name || name,
+    area: getOsmArea(result),
+    state: address.state || address.region || "",
+    country: address.country || "Malaysia",
+    type: "Residential Area",
+    source: "osm",
+    externalId: getOsmExternalId(result),
+    location,
+  });
+};
+
+export const searchOsmCommunities = async (searchTerm = "") => {
+  const normalizedSearch = cleanCommunityText(searchTerm);
+
+  if (!normalizedSearch) {
+    return [];
+  }
+
+  const params = new URLSearchParams({
+    q: normalizedSearch,
+    format: "json",
+    addressdetails: "1",
+    limit: "5",
+    countrycodes: "my",
+  });
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?${params.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error("OpenStreetMap search is unavailable right now.");
+  }
+
+  const results = await response.json();
+
+  return results
+    .map(toOsmCommunityDraft)
+    .filter(
+      (community) =>
+        community?.name &&
+        community.externalId &&
+        community.location &&
+        Number.isFinite(community.location.lat) &&
+        Number.isFinite(community.location.lng)
+    )
+    .slice(0, 5);
+};
+
+const buildDuplicateError = (duplicate) => {
+  const error = new Error(
+    duplicate.exact
+      ? `A community named ${duplicate.community.name} already exists. Please join it instead.`
+      : `A similar community already exists: ${getCommunityLabel(
+          duplicate.community
+        )}. Please join it if this is your community.`
+  );
+
+  error.duplicateCommunity = duplicate.community;
+  return error;
+};
+
+const createOsmCommunity = async ({ community, user }) => {
+  const summary = toCommunitySummary(community);
+
+  if (!summary?.externalId || !summary?.location) {
+    throw new Error("Please choose a valid OpenStreetMap result.");
+  }
+
+  const existingExternal = await findCommunityByExternalId(summary.externalId);
+
+  if (existingExternal) {
+    return existingExternal;
+  }
+
+  const duplicate = await findDuplicateCommunity(summary.name);
+
+  if (duplicate) {
+    return duplicate.community;
+  }
+
+  const docRef = await addDoc(collection(db, "communities"), {
+    name: summary.name,
+    nameLower: normalizeCommunityName(summary.name),
+    displayName: summary.displayName || summary.name,
+    area: summary.area,
+    state: summary.state,
+    country: summary.country,
+    type: summary.type || "Residential Area",
+    active: true,
+    createdAt: serverTimestamp(),
+    createdBy: user.uid,
+    source: "osm",
+    externalId: summary.externalId,
+    location: summary.location,
+    requiresInvite: false,
+    inviteCode: "",
+  });
+
+  return toCommunitySummary({
+    ...summary,
+    communityId: docRef.id,
+  });
+};
+
 export const createCommunity = async ({ community, user }) => {
   if (!user?.uid) {
     throw new Error("Please sign in before creating a community.");
@@ -167,7 +368,6 @@ export const createCommunity = async ({ community, user }) => {
   const state = cleanCommunityText(community.state);
   const country = cleanCommunityText(community.country || "Malaysia");
   const type = cleanCommunityText(community.type);
-  const location = normalizeLocation(community.location);
 
   if (!name || !area || !state || !country || !type) {
     throw new Error("Please fill in all community fields.");
@@ -176,18 +376,10 @@ export const createCommunity = async ({ community, user }) => {
   const duplicate = await findDuplicateCommunity(name);
 
   if (duplicate) {
-    const error = new Error(
-      duplicate.exact
-        ? `A community named ${duplicate.community.name} already exists. Please join it instead.`
-        : `A similar community already exists: ${getCommunityLabel(
-            duplicate.community
-          )}. Please join it if this is your community.`
-    );
-    error.duplicateCommunity = duplicate.community;
-    throw error;
+    throw buildDuplicateError(duplicate);
   }
 
-  const communityData = {
+  const docRef = await addDoc(collection(db, "communities"), {
     name,
     nameLower: normalizeCommunityName(name),
     area,
@@ -197,15 +389,10 @@ export const createCommunity = async ({ community, user }) => {
     active: true,
     createdAt: serverTimestamp(),
     createdBy: user.uid,
+    source: "manual",
     requiresInvite: false,
     inviteCode: "",
-  };
-
-  if (location) {
-    communityData.location = location;
-  }
-
-  const docRef = await addDoc(collection(db, "communities"), communityData);
+  });
 
   return toCommunitySummary({
     communityId: docRef.id,
@@ -214,7 +401,7 @@ export const createCommunity = async ({ community, user }) => {
     state,
     country,
     type,
-    location,
+    source: "manual",
   });
 };
 
@@ -227,6 +414,10 @@ export const ensureCommunityForUser = async ({ community, user }) => {
 
   if (summary.communityId) {
     return summary;
+  }
+
+  if (summary.source === "osm") {
+    return createOsmCommunity({ community: summary, user });
   }
 
   return createCommunity({ community: summary, user });

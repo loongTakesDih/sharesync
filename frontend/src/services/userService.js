@@ -14,6 +14,7 @@ import {
   ensureCommunityForUser,
   getCommunityName,
   toCommunitySummary,
+  toUserCommunitySummary,
 } from "./communityService";
 import { defaultTrustStats, getTrustRating } from "../utils/trust";
 import { getUsernameLower } from "../utils/validators";
@@ -34,7 +35,7 @@ const normalizeProfileCommunity = (community) => {
       : null;
   }
 
-  return toCommunitySummary(community);
+  return toUserCommunitySummary(community);
 };
 
 export const normalizeUserProfile = (profile = {}) => {
@@ -110,15 +111,16 @@ export const createUserProfile = async ({
     community,
     user: firebaseUser,
   });
+  const userCommunity = toUserCommunitySummary(selectedCommunity);
   const profile = {
     username: username.trim(),
     usernameLower: getUsernameLower(username),
     email: firebaseUser.email || "",
     displayName: firebaseUser.displayName || "",
     photoURL: firebaseUser.photoURL || "",
-    communities: [selectedCommunity],
-    activeCommunityId: selectedCommunity.communityId,
-    activeCommunity: selectedCommunity.name,
+    communities: [userCommunity],
+    activeCommunityId: userCommunity.communityId,
+    activeCommunity: userCommunity.name,
     createdAt: serverTimestamp(),
     reputationScore: 60,
     trustRating: 3,
@@ -148,8 +150,8 @@ export const updateUserActiveCommunity = async ({ community, uid }) => {
   await setDoc(
     doc(db, "users", uid),
     {
-      activeCommunityId: selectedCommunity.communityId || "",
-      activeCommunity: selectedCommunity.name,
+    activeCommunityId: selectedCommunity.communityId || "",
+    activeCommunity: selectedCommunity.name,
     },
     { merge: true }
   );

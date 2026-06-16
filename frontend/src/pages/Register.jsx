@@ -23,14 +23,19 @@ function Register({ navigate, onProfileCreated }) {
     event.preventDefault();
     setMessage("");
 
-    if (
-      !username.trim() ||
-      !email.trim() ||
-      !password ||
-      !confirmPassword ||
-      !community?.name
-    ) {
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
       setMessage("Please fill in all fields.");
+      return;
+    }
+
+    if (
+      !community?.name ||
+      !community?.area ||
+      !community?.state ||
+      !community?.country ||
+      !community?.type
+    ) {
+      setMessage("Please select or complete your community.");
       return;
     }
 
