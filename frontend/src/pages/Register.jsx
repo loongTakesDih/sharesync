@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CommunitySelector from "../components/community/CommunitySelector";
 import AuthMessage from "../components/ui/AuthMessage";
 import AuthShell from "../components/ui/AuthShell";
 import { registerWithEmail } from "../services/authService";
@@ -14,7 +15,7 @@ function Register({ navigate, onProfileCreated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [community, setCommunity] = useState("");
+  const [community, setCommunity] = useState(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -27,7 +28,7 @@ function Register({ navigate, onProfileCreated }) {
       !email.trim() ||
       !password ||
       !confirmPassword ||
-      !community.trim()
+      !community?.name
     ) {
       setMessage("Please fill in all fields.");
       return;
@@ -100,12 +101,10 @@ function Register({ navigate, onProfileCreated }) {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
         />
-        <input
-          className={inputClass}
-          type="text"
-          placeholder="Community"
-          value={community}
-          onChange={(event) => setCommunity(event.target.value)}
+        <CommunitySelector
+          disabled={saving}
+          selectedCommunity={community}
+          onChange={setCommunity}
         />
         <button className={primaryButtonClass} type="submit" disabled={saving}>
           {saving ? "Creating account..." : "Register"}

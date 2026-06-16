@@ -14,6 +14,7 @@ import { isValidItemCategory } from "../utils/itemCategories";
 
 export const createItem = ({
   activeCommunity,
+  activeCommunityObject,
   category,
   condition = "",
   description,
@@ -27,6 +28,10 @@ export const createItem = ({
     throw new Error("Please select a valid category.");
   }
 
+  if (!activeCommunityObject?.communityId) {
+    throw new Error("Please select or create your community first.");
+  }
+
   return addDoc(collection(db, "items"), {
     name: name.trim(),
     description: description.trim(),
@@ -36,7 +41,12 @@ export const createItem = ({
     ownerId: user.uid,
     ownerUsername: userProfile.username,
     ownerEmail: user.email,
-    community: activeCommunity,
+    communityId: activeCommunityObject.communityId,
+    communityName: activeCommunityObject.name,
+    communityArea: activeCommunityObject.area || "",
+    communityState: activeCommunityObject.state || "",
+    communityType: activeCommunityObject.type || "",
+    community: activeCommunityObject.name || activeCommunity,
     preferredPickupLocation: preferredPickupLocation.trim(),
     available: true,
     createdAt: serverTimestamp(),
@@ -46,14 +56,27 @@ export const createItem = ({
 export const updateItem = (itemId, updates) =>
   updateDoc(doc(db, "items", itemId), updates);
 
-export const deleteItem = async ({ activeCommunity, itemId, user }) => {
-  const relatedRequestsQuery = query(
-    collection(db, "requests"),
-    where("itemId", "==", itemId),
-    where("ownerId", "==", user.uid),
-    where("community", "==", activeCommunity),
-    where("status", "in", ["pending", "approved"])
-  );
+export const deleteItem = async ({
+  activeCommunity,
+  activeCommunityId,
+  itemId,
+  user,
+}) => {
+  const relatedRequestsQuery = activeCommunityId
+    ? query(
+        collection(db, "requests"),
+        where("itemId", "==", itemId),
+        where("ownerId", "==", user.uid),
+        where("communityId", "==", activeCommunityId),
+        where("status", "in", ["pending", "approved"])
+      )
+    : query(
+        collection(db, "requests"),
+        where("itemId", "==", itemId),
+        where("ownerId", "==", user.uid),
+        where("community", "==", activeCommunity),
+        where("status", "in", ["pending", "approved"])
+      );
   const relatedRequestsSnapshot = await getDocs(relatedRequestsQuery);
   const batch = writeBatch(db);
 

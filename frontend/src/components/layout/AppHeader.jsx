@@ -2,6 +2,7 @@ import { useState } from "react";
 
 function AppHeader({
   activeCommunity,
+  activeCommunityId,
   activePage,
   navigate,
   onCommunityChange,
@@ -26,6 +27,9 @@ function AppHeader({
     ["history", "History"],
     ["profile", "Profile"],
   ];
+  const hasStructuredCommunities = userProfile.communities.some(
+    (community) => community.communityId
+  );
 
   return (
     <header className="sticky top-0 z-20 -mx-4 border-b border-stone-200 bg-stone-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -99,15 +103,22 @@ function AppHeader({
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <select
             className="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 sm:flex-none"
-            value={activeCommunity}
+            value={activeCommunityId}
             onChange={(event) => onCommunityChange(event.target.value)}
             aria-label="Active community"
+            disabled={!hasStructuredCommunities}
           >
             {userProfile.communities.map((community) => (
-              <option key={community} value={community}>
-                {community}
+              <option
+                key={community.communityId || community.name}
+                value={community.communityId}
+              >
+                {community.name}
               </option>
             ))}
+            {!hasStructuredCommunities && (
+              <option value="">{activeCommunity || "Select community"}</option>
+            )}
           </select>
 
           <button

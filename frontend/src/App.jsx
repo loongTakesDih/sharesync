@@ -60,10 +60,12 @@ function App() {
 
   const {
     activeCommunity,
+    activeCommunityId,
+    activeCommunityObject,
     applyUserProfile,
     authReady,
+    changeActiveCommunity,
     profileLoading,
-    setActiveCommunity,
     user,
     userProfile,
   } = useAuthProfile(navigate);
@@ -135,6 +137,8 @@ function App() {
       return (
         <Browse
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
           listIntent={listIntent}
           onSearchChange={setMarketplaceSearch}
           searchTerm={marketplaceSearch}
@@ -148,8 +152,10 @@ function App() {
       return (
         <Home
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
           navigate={navigate}
-          onCommunityChange={setActiveCommunity}
+          onCommunityChange={changeActiveCommunity}
           onListItem={() => {
             navigate(pagePaths.browse);
             setListIntent((current) => current + 1);
@@ -165,6 +171,8 @@ function App() {
       return (
         <MyItems
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
           user={user}
           userProfile={userProfile}
         />
@@ -175,6 +183,8 @@ function App() {
       return (
         <Requests
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
           user={user}
           userProfile={userProfile}
         />
@@ -182,13 +192,21 @@ function App() {
     }
 
     if (activePage === "history") {
-      return <History activeCommunity={activeCommunity} user={user} />;
+      return (
+        <History
+          activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          user={user}
+        />
+      );
     }
 
     if (activePage === "profile") {
       return (
         <Profile
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
           user={user}
           userProfile={userProfile}
         />
@@ -240,9 +258,10 @@ function App() {
       <div className="mx-auto max-w-7xl">
         <AppHeader
           activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
           activePage={activePage}
           navigate={navigate}
-          onCommunityChange={setActiveCommunity}
+          onCommunityChange={changeActiveCommunity}
           onListItem={() => {
             navigate(pagePaths.browse);
             setListIntent((current) => current + 1);

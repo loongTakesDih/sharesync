@@ -23,6 +23,23 @@ import {
   roundRatingToHalf,
 } from "../utils/trust";
 
+const getActiveCommunityName = ({ activeCommunity, activeCommunityObject }) =>
+  activeCommunityObject?.name || activeCommunity || "";
+
+const matchesActiveCommunity = (
+  record,
+  { activeCommunity, activeCommunityId }
+) => {
+  if (activeCommunityId) {
+    return (
+      record.communityId === activeCommunityId ||
+      (!record.communityId && record.community === activeCommunity)
+    );
+  }
+
+  return record.community === activeCommunity;
+};
+
 export const getFreshRequest = async (requestId) => {
   const requestRef = doc(db, "requests", requestId);
   const requestSnapshot = await getDoc(requestRef);
@@ -40,7 +57,14 @@ export const getFreshRequest = async (requestId) => {
   };
 };
 
-export const createRequest = async ({ activeCommunity, item, user, userProfile }) => {
+export const createRequest = async ({
+  activeCommunity,
+  activeCommunityId,
+  activeCommunityObject,
+  item,
+  user,
+  userProfile,
+}) => {
   const itemSnapshot = await getDoc(doc(db, "items", item.id));
 
   if (!itemSnapshot.exists()) {
@@ -56,36 +80,56 @@ export const createRequest = async ({ activeCommunity, item, user, userProfile }
     throw new Error("You cannot request your own item.");
   }
 
-  if (freshItem.community !== activeCommunity || !freshItem.available) {
+  if (
+    !matchesActiveCommunity(freshItem, { activeCommunity, activeCommunityId }) ||
+    !freshItem.available
+  ) {
     throw new Error("This item is no longer available.");
   }
 
-  const duplicateRequestQuery = query(
-    collection(db, "requests"),
-    where("borrowerId", "==", user.uid),
-    where("community", "==", activeCommunity),
-    where("itemId", "==", freshItem.id),
-    where("status", "==", "pending"),
-    limit(1)
-  );
+  const duplicateRequestQuery = activeCommunityId
+    ? query(
+        collection(db, "requests"),
+        where("borrowerId", "==", user.uid),
+        where("communityId", "==", activeCommunityId),
+        where("itemId", "==", freshItem.id),
+        where("status", "==", "pending"),
+        limit(1)
+      )
+    : query(
+        collection(db, "requests"),
+        where("borrowerId", "==", user.uid),
+        where("community", "==", activeCommunity),
+        where("itemId", "==", freshItem.id),
+        where("status", "==", "pending"),
+        limit(1)
+      );
   const duplicateRequest = await getDocs(duplicateRequestQuery);
 
   if (!duplicateRequest.empty) {
     throw new Error("You have already requested this item.");
   }
 
+  const communityName = getActiveCommunityName({
+    activeCommunity,
+    activeCommunityObject,
+  });
+
   await addDoc(collection(db, "requests"), {
     itemId: freshItem.id,
     itemName: freshItem.name,
     itemCategory: freshItem.category || "",
     itemImageBase64: freshItem.imageBase64 || "",
+    preferredPickupLocation: freshItem.preferredPickupLocation || "",
     ownerId: freshItem.ownerId,
     ownerUsername: freshItem.ownerUsername || "",
     ownerEmail: freshItem.ownerEmail || "",
     borrowerId: user.uid,
     borrowerUsername: userProfile.username,
     borrowerEmail: user.email,
-    community: activeCommunity,
+    communityId: activeCommunityId || freshItem.communityId || "",
+    communityName,
+    community: communityName,
     status: "pending",
     createdAt: serverTimestamp(),
   });
@@ -93,7 +137,12 @@ export const createRequest = async ({ activeCommunity, item, user, userProfile }
   return freshItem.id;
 };
 
-export const withdrawRequest = async ({ activeCommunity, request, user }) => {
+export const withdrawRequest = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.borrowerId !== user.uid) {
@@ -101,7 +150,7 @@ export const withdrawRequest = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pending"
   ) {
     throw new Error("Only pending requests in this community can be withdrawn.");
@@ -113,7 +162,12 @@ export const withdrawRequest = async ({ activeCommunity, request, user }) => {
   });
 };
 
-export const rejectRequest = async ({ activeCommunity, request, user }) => {
+export const rejectRequest = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.ownerId !== user.uid) {
@@ -121,7 +175,7 @@ export const rejectRequest = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pending"
   ) {
     throw new Error("Only pending requests in this community can be rejected.");
@@ -133,8 +187,13 @@ export const rejectRequest = async ({ activeCommunity, request, user }) => {
   });
 };
 
-export const acceptRequest = async ({ activeCommunity, request, user }) => {
-  if (!user || !activeCommunity) {
+export const acceptRequest = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
+  if (!user || !(activeCommunityId || activeCommunity)) {
     throw new Error("User or community not found.");
   }
 
@@ -155,7 +214,7 @@ export const acceptRequest = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pending"
   ) {
     throw new Error("Only pending requests in this community can be accepted.");
@@ -177,13 +236,21 @@ export const acceptRequest = async ({ activeCommunity, request, user }) => {
     throw new Error("This item is no longer available.");
   }
 
-  const competingRequestsQuery = query(
-    collection(db, "requests"),
-    where("itemId", "==", request.itemId),
-    where("ownerId", "==", user.uid),
-    where("community", "==", activeCommunity),
-    where("status", "==", "pending")
-  );
+  const competingRequestsQuery = activeCommunityId
+    ? query(
+        collection(db, "requests"),
+        where("itemId", "==", request.itemId),
+        where("ownerId", "==", user.uid),
+        where("communityId", "==", activeCommunityId),
+        where("status", "==", "pending")
+      )
+    : query(
+        collection(db, "requests"),
+        where("itemId", "==", request.itemId),
+        where("ownerId", "==", user.uid),
+        where("community", "==", activeCommunity),
+        where("status", "==", "pending")
+      );
   const competingRequestsSnapshot = await getDocs(competingRequestsQuery);
   const batch = writeBatch(db);
 
@@ -211,6 +278,7 @@ export const acceptRequest = async ({ activeCommunity, request, user }) => {
 
 export const savePickupDetails = async ({
   activeCommunity,
+  activeCommunityId,
   pickupDate,
   pickupLocation,
   pickupNote,
@@ -225,7 +293,7 @@ export const savePickupDetails = async ({
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     !["approved", "pickup_scheduled", "pickup_change_requested"].includes(
       freshRequest.status
     )
@@ -245,7 +313,12 @@ export const savePickupDetails = async ({
   });
 };
 
-export const confirmPickup = async ({ activeCommunity, request, user }) => {
+export const confirmPickup = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.borrowerId !== user.uid) {
@@ -253,7 +326,7 @@ export const confirmPickup = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pickup_scheduled"
   ) {
     throw new Error("Only scheduled pickups can be confirmed.");
@@ -267,6 +340,7 @@ export const confirmPickup = async ({ activeCommunity, request, user }) => {
 
 export const requestPickupChange = async ({
   activeCommunity,
+  activeCommunityId,
   message,
   request,
   user,
@@ -278,7 +352,7 @@ export const requestPickupChange = async ({
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pickup_scheduled"
   ) {
     throw new Error("Only scheduled pickups can be changed.");
@@ -291,7 +365,12 @@ export const requestPickupChange = async ({
   });
 };
 
-export const confirmHandover = async ({ activeCommunity, request, user }) => {
+export const confirmHandover = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.ownerId !== user.uid) {
@@ -299,7 +378,7 @@ export const confirmHandover = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "pickup_confirmed"
   ) {
     throw new Error("Only confirmed pickups can be marked as handed over.");
@@ -312,7 +391,12 @@ export const confirmHandover = async ({ activeCommunity, request, user }) => {
   });
 };
 
-export const markReturned = async ({ activeCommunity, request, user }) => {
+export const markReturned = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.borrowerId !== user.uid) {
@@ -320,7 +404,7 @@ export const markReturned = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "borrowed"
   ) {
     throw new Error("Only borrowed items can be marked as returned.");
@@ -332,7 +416,12 @@ export const markReturned = async ({ activeCommunity, request, user }) => {
   });
 };
 
-export const confirmReturn = async ({ activeCommunity, request, user }) => {
+export const confirmReturn = async ({
+  activeCommunity,
+  activeCommunityId,
+  request,
+  user,
+}) => {
   const { requestRef, request: freshRequest } = await getFreshRequest(request.id);
 
   if (freshRequest.ownerId !== user.uid) {
@@ -340,7 +429,7 @@ export const confirmReturn = async ({ activeCommunity, request, user }) => {
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "return_pending"
   ) {
     throw new Error("Only pending returns can be confirmed.");
@@ -376,6 +465,7 @@ export const confirmReturn = async ({ activeCommunity, request, user }) => {
 
 export const inspectReturn = async ({
   activeCommunity,
+  activeCommunityId,
   condition,
   note,
   request,
@@ -394,7 +484,7 @@ export const inspectReturn = async ({
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "return_pending"
   ) {
     throw new Error("Only pending returns in this community can be inspected.");
@@ -508,6 +598,7 @@ export const inspectReturn = async ({
 
 export const resolveReturnIssue = async ({
   activeCommunity,
+  activeCommunityId,
   makeItemAvailable,
   note,
   request,
@@ -520,7 +611,7 @@ export const resolveReturnIssue = async ({
   }
 
   if (
-    freshRequest.community !== activeCommunity ||
+    !matchesActiveCommunity(freshRequest, { activeCommunity, activeCommunityId }) ||
     freshRequest.status !== "return_issue"
   ) {
     throw new Error("Only open return issues in this community can be resolved.");

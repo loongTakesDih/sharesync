@@ -2,6 +2,8 @@ import MarketplaceView from "../components/marketplace/MarketplaceView";
 
 function Browse({
   activeCommunity,
+  activeCommunityId,
+  activeCommunityObject,
   listIntent,
   onSearchChange,
   searchTerm,
@@ -11,6 +13,8 @@ function Browse({
   return (
     <MarketplaceView
       activeCommunity={activeCommunity}
+      activeCommunityId={activeCommunityId}
+      activeCommunityObject={activeCommunityObject}
       key={listIntent}
       listIntent={listIntent}
       onSearchChange={onSearchChange}

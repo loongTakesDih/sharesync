@@ -1,30 +1,43 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
-export const useRequests = ({ activeCommunity, user }) => {
+const getTimestampMillis = (timestamp) =>
+  timestamp?.toDate ? timestamp.toDate().getTime() : 0;
+
+const newestFirst = (first, second) =>
+  getTimestampMillis(second.createdAt) - getTimestampMillis(first.createdAt);
+
+export const useRequests = ({ activeCommunity, activeCommunityId, user }) => {
   const [outgoingState, setOutgoingState] = useState({
-    community: "",
+    communityKey: "",
     userId: "",
     requests: [],
   });
   const [incomingState, setIncomingState] = useState({
-    community: "",
+    communityKey: "",
     userId: "",
     requests: [],
   });
 
   useEffect(() => {
-    if (!user || !activeCommunity) {
+    const communityKey = activeCommunityId || activeCommunity;
+
+    if (!user || !communityKey) {
       return undefined;
     }
 
-    const outgoingQuery = query(
-      collection(db, "requests"),
-      where("borrowerId", "==", user.uid),
-      where("community", "==", activeCommunity),
-      orderBy("createdAt", "desc")
-    );
+    const outgoingQuery = activeCommunityId
+      ? query(
+          collection(db, "requests"),
+          where("borrowerId", "==", user.uid),
+          where("communityId", "==", activeCommunityId)
+        )
+      : query(
+          collection(db, "requests"),
+          where("borrowerId", "==", user.uid),
+          where("community", "==", activeCommunity)
+        );
 
     const unsubscribe = onSnapshot(
       outgoingQuery,
@@ -32,10 +45,10 @@ export const useRequests = ({ activeCommunity, user }) => {
         const requests = snapshot.docs.map((requestDoc) => ({
           id: requestDoc.id,
           ...requestDoc.data(),
-        }));
+        })).sort(newestFirst);
 
         setOutgoingState({
-          community: activeCommunity,
+          communityKey,
           userId: user.uid,
           requests,
         });
@@ -43,7 +56,7 @@ export const useRequests = ({ activeCommunity, user }) => {
       (error) => {
         alert(error.message);
         setOutgoingState({
-          community: activeCommunity,
+          communityKey,
           userId: user.uid,
           requests: [],
         });
@@ -51,19 +64,26 @@ export const useRequests = ({ activeCommunity, user }) => {
     );
 
     return () => unsubscribe();
-  }, [activeCommunity, user]);
+  }, [activeCommunity, activeCommunityId, user]);
 
   useEffect(() => {
-    if (!user || !activeCommunity) {
+    const communityKey = activeCommunityId || activeCommunity;
+
+    if (!user || !communityKey) {
       return undefined;
     }
 
-    const incomingQuery = query(
-      collection(db, "requests"),
-      where("ownerId", "==", user.uid),
-      where("community", "==", activeCommunity),
-      orderBy("createdAt", "desc")
-    );
+    const incomingQuery = activeCommunityId
+      ? query(
+          collection(db, "requests"),
+          where("ownerId", "==", user.uid),
+          where("communityId", "==", activeCommunityId)
+        )
+      : query(
+          collection(db, "requests"),
+          where("ownerId", "==", user.uid),
+          where("community", "==", activeCommunity)
+        );
 
     const unsubscribe = onSnapshot(
       incomingQuery,
@@ -71,10 +91,10 @@ export const useRequests = ({ activeCommunity, user }) => {
         const requests = snapshot.docs.map((requestDoc) => ({
           id: requestDoc.id,
           ...requestDoc.data(),
-        }));
+        })).sort(newestFirst);
 
         setIncomingState({
-          community: activeCommunity,
+          communityKey,
           userId: user.uid,
           requests,
         });
@@ -82,7 +102,7 @@ export const useRequests = ({ activeCommunity, user }) => {
       (error) => {
         alert(error.message);
         setIncomingState({
-          community: activeCommunity,
+          communityKey,
           userId: user.uid,
           requests: [],
         });
@@ -90,24 +110,25 @@ export const useRequests = ({ activeCommunity, user }) => {
     );
 
     return () => unsubscribe();
-  }, [activeCommunity, user]);
+  }, [activeCommunity, activeCommunityId, user]);
 
+  const communityKey = activeCommunityId || activeCommunity;
   const outgoingLoading =
-    activeCommunity &&
+    communityKey &&
     user &&
-    (outgoingState.community !== activeCommunity ||
+    (outgoingState.communityKey !== communityKey ||
       outgoingState.userId !== user.uid);
   const incomingLoading =
-    activeCommunity &&
+    communityKey &&
     user &&
-    (incomingState.community !== activeCommunity ||
+    (incomingState.communityKey !== communityKey ||
       incomingState.userId !== user.uid);
   const outgoingRequests =
-    outgoingState.community === activeCommunity && outgoingState.userId === user?.uid
+    outgoingState.communityKey === communityKey && outgoingState.userId === user?.uid
       ? outgoingState.requests
       : [];
   const incomingRequests =
-    incomingState.community === activeCommunity && incomingState.userId === user?.uid
+    incomingState.communityKey === communityKey && incomingState.userId === user?.uid
       ? incomingState.requests
       : [];
 

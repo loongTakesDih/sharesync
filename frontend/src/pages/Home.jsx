@@ -11,6 +11,8 @@ import { closedRequestStatuses } from "../utils/requestStatus";
 
 function Home({
   activeCommunity,
+  activeCommunityId,
+  activeCommunityObject,
   navigate,
   onCommunityChange,
   onListItem,
@@ -28,16 +30,21 @@ function Home({
     profile,
     profileLoading,
   } = usePublicProfileModal();
-  const { items, loading: itemsLoading } = useItems({ activeCommunity, user });
+  const { items, loading: itemsLoading } = useItems({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
   const { items: myItems, loading: myItemsLoading } = useMyItems({
     activeCommunity,
+    activeCommunityId,
     user,
   });
   const {
     incomingRequests,
     outgoingRequests,
     requestsLoading,
-  } = useRequests({ activeCommunity, user });
+  } = useRequests({ activeCommunity, activeCommunityId, user });
   const trackedRequestedItemIds = outgoingRequests
     .filter((request) => !closedRequestStatuses.includes(request.status))
     .map((request) => request.itemId);
@@ -137,8 +144,8 @@ function Home({
       return;
     }
 
-    if (!activeCommunity) {
-      setMessage("Please select a community first.");
+    if (!(activeCommunityId || activeCommunity)) {
+      setMessage("Please select or create your community first.");
       return;
     }
 
@@ -158,6 +165,8 @@ function Home({
     try {
       const requestedItemId = await createRequest({
         activeCommunity,
+        activeCommunityId,
+        activeCommunityObject,
         item,
         user,
         userProfile,
@@ -208,14 +217,29 @@ function Home({
               Active community
               <select
                 className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                value={activeCommunity}
+                value={activeCommunityId}
                 onChange={(event) => onCommunityChange(event.target.value)}
+                disabled={
+                  !userProfile.communities.some(
+                    (community) => community.communityId
+                  )
+                }
               >
                 {userProfile.communities.map((community) => (
-                  <option key={community} value={community}>
-                    {community}
+                  <option
+                    key={community.communityId || community.name}
+                    value={community.communityId}
+                  >
+                    {community.name}
                   </option>
                 ))}
+                {!userProfile.communities.some(
+                  (community) => community.communityId
+                ) && (
+                  <option value="">
+                    {activeCommunity || "Select or create your community"}
+                  </option>
+                )}
               </select>
             </label>
           </div>

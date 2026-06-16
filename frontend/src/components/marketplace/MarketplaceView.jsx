@@ -16,6 +16,8 @@ import { closedRequestStatuses } from "../../utils/requestStatus";
 
 function MarketplaceView({
   activeCommunity,
+  activeCommunityId,
+  activeCommunityObject,
   listIntent = 0,
   onSearchChange,
   searchTerm = "",
@@ -46,8 +48,16 @@ function MarketplaceView({
     profile,
     profileLoading,
   } = usePublicProfileModal();
-  const { items, loading } = useItems({ activeCommunity, user });
-  const { outgoingRequests } = useRequests({ activeCommunity, user });
+  const { items, loading } = useItems({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
+  const { outgoingRequests } = useRequests({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
 
   const pendingRequestedItemIds = outgoingRequests
     .filter((request) => !closedRequestStatuses.includes(request.status))
@@ -85,8 +95,8 @@ function MarketplaceView({
       return;
     }
 
-    if (!activeCommunity) {
-      setMessage("Please select a community first.");
+    if (!activeCommunityObject?.communityId) {
+      setMessage("Please select or create your community first.");
       return;
     }
 
@@ -101,6 +111,7 @@ function MarketplaceView({
     try {
       await createItem({
         activeCommunity,
+        activeCommunityObject,
         category,
         condition,
         description,
@@ -189,8 +200,8 @@ function MarketplaceView({
       return;
     }
 
-    if (!activeCommunity) {
-      setMessage("Please select a community first.");
+    if (!(activeCommunityId || activeCommunity)) {
+      setMessage("Please select or create your community first.");
       return;
     }
 
@@ -210,6 +221,8 @@ function MarketplaceView({
     try {
       const requestedItemId = await createRequest({
         activeCommunity,
+        activeCommunityId,
+        activeCommunityObject,
         item,
         user,
         userProfile,

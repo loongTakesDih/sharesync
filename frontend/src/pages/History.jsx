@@ -77,7 +77,7 @@ function getTimestampMillis(timestamp) {
   return timestamp?.toDate ? timestamp.toDate().getTime() : 0;
 }
 
-function History({ activeCommunity, user }) {
+function History({ activeCommunity, activeCommunityId, user }) {
   const {
     closeUserProfile,
     openUserProfile,
@@ -86,6 +86,7 @@ function History({ activeCommunity, user }) {
   } = usePublicProfileModal();
   const { incomingRequests, outgoingRequests, requestsLoading } = useRequests({
     activeCommunity,
+    activeCommunityId,
     user,
   });
 

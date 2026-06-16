@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { defaultTrustStats, getTrustRating } from "../utils/trust";
+import {
+  normalizeUserProfile,
+  updateUserActiveCommunity,
+} from "../services/userService";
 
 export const useAuthProfile = (navigate) => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-  const [activeCommunity, setActiveCommunity] = useState("");
+  const [activeCommunityId, setActiveCommunityId] = useState("");
   const [profileLoading, setProfileLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
 
@@ -18,7 +21,7 @@ export const useAuthProfile = (navigate) => {
 
       if (!currentUser) {
         setUserProfile(null);
-        setActiveCommunity("");
+        setActiveCommunityId("");
         setProfileLoading(false);
       }
     });
@@ -36,38 +39,29 @@ export const useAuthProfile = (navigate) => {
       (profileSnapshot) => {
         if (!profileSnapshot.exists()) {
           setUserProfile(null);
-          setActiveCommunity("");
+          setActiveCommunityId("");
           setProfileLoading(false);
           navigate("/complete-profile");
           return;
         }
 
         const profile = profileSnapshot.data();
-        const normalizedProfile = {
-          ...profile,
-          communities: Array.isArray(profile.communities)
-            ? profile.communities
-            : [],
-          reputationScore: profile.reputationScore ?? 60,
-          trustRating: getTrustRating(profile),
-          trustStats: {
-            ...defaultTrustStats,
-            ...(profile.trustStats || {}),
-          },
-        };
+        const normalizedProfile = normalizeUserProfile(profile);
 
         setUserProfile(normalizedProfile);
-        setActiveCommunity((currentCommunity) =>
-          normalizedProfile.communities.includes(currentCommunity)
-            ? currentCommunity
-            : normalizedProfile.communities[0] || ""
+        setActiveCommunityId((currentCommunityId) =>
+          normalizedProfile.communities.some(
+            (community) => community.communityId === currentCommunityId
+          )
+            ? currentCommunityId
+            : normalizedProfile.activeCommunityId
         );
         setProfileLoading(false);
       },
       (error) => {
         alert(error.message);
         setUserProfile(null);
-        setActiveCommunity("");
+        setActiveCommunityId("");
         setProfileLoading(false);
       }
     );
@@ -76,16 +70,52 @@ export const useAuthProfile = (navigate) => {
   }, [navigate, user]);
 
   const applyUserProfile = (profile) => {
-    setUserProfile(profile);
-    setActiveCommunity(profile.communities[0] || "");
+    const normalizedProfile = normalizeUserProfile(profile);
+
+    setUserProfile(normalizedProfile);
+    setActiveCommunityId(normalizedProfile.activeCommunityId);
   };
+
+  const changeActiveCommunity = (communityId) => {
+    const selectedCommunity =
+      userProfile?.communities.find(
+        (community) => community.communityId === communityId
+      ) || null;
+
+    if (!selectedCommunity) {
+      return;
+    }
+
+    setActiveCommunityId(communityId);
+
+    if (user?.uid) {
+      updateUserActiveCommunity({
+        community: selectedCommunity,
+        uid: user.uid,
+      }).catch((error) => alert(error.message));
+    }
+  };
+
+  const activeCommunityObject =
+    userProfile?.communities.find(
+      (community) =>
+        community.communityId && community.communityId === activeCommunityId
+    ) ||
+    userProfile?.communities.find(
+      (community) => community.name === userProfile.activeCommunity
+    ) ||
+    null;
+  const activeCommunity =
+    activeCommunityObject?.name || userProfile?.activeCommunity || "";
 
   return {
     activeCommunity,
+    activeCommunityId,
+    activeCommunityObject,
     applyUserProfile,
     authReady,
+    changeActiveCommunity,
     profileLoading,
-    setActiveCommunity,
     user,
     userProfile,
   };

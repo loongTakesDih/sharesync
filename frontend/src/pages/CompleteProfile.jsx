@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CommunitySelector from "../components/community/CommunitySelector";
 import AuthMessage from "../components/ui/AuthMessage";
 import AuthShell from "../components/ui/AuthShell";
 import { logoutUser } from "../services/authService";
@@ -11,7 +12,7 @@ import { getUsernameLower } from "../utils/validators";
 
 function CompleteProfile({ navigate, onProfileCreated, user }) {
   const [username, setUsername] = useState("");
-  const [community, setCommunity] = useState("");
+  const [community, setCommunity] = useState(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -19,8 +20,8 @@ function CompleteProfile({ navigate, onProfileCreated, user }) {
     event.preventDefault();
     setMessage("");
 
-    if (!username.trim() || !community.trim()) {
-      setMessage("Please enter a username and community.");
+    if (!username.trim() || !community?.name) {
+      setMessage("Please enter a username and select a community.");
       return;
     }
 
@@ -72,12 +73,10 @@ function CompleteProfile({ navigate, onProfileCreated, user }) {
           value={username}
           onChange={(event) => setUsername(event.target.value)}
         />
-        <input
-          className={inputClass}
-          type="text"
-          placeholder="Community"
-          value={community}
-          onChange={(event) => setCommunity(event.target.value)}
+        <CommunitySelector
+          disabled={saving}
+          selectedCommunity={community}
+          onChange={setCommunity}
         />
         <button className={primaryButtonClass} type="submit" disabled={saving}>
           {saving ? "Saving..." : "Complete profile"}

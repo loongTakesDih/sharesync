@@ -1,25 +1,38 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
-export const useMyItems = ({ activeCommunity, user }) => {
+const getTimestampMillis = (timestamp) =>
+  timestamp?.toDate ? timestamp.toDate().getTime() : 0;
+
+const newestFirst = (first, second) =>
+  getTimestampMillis(second.createdAt) - getTimestampMillis(first.createdAt);
+
+export const useMyItems = ({ activeCommunity, activeCommunityId, user }) => {
   const [itemsState, setItemsState] = useState({
-    community: "",
+    communityKey: "",
     ownerId: "",
     items: [],
   });
 
   useEffect(() => {
-    if (!user || !activeCommunity) {
+    const communityKey = activeCommunityId || activeCommunity;
+
+    if (!user || !communityKey) {
       return undefined;
     }
 
-    const myItemsQuery = query(
-      collection(db, "items"),
-      where("ownerId", "==", user.uid),
-      where("community", "==", activeCommunity),
-      orderBy("createdAt", "desc")
-    );
+    const myItemsQuery = activeCommunityId
+      ? query(
+          collection(db, "items"),
+          where("ownerId", "==", user.uid),
+          where("communityId", "==", activeCommunityId)
+        )
+      : query(
+          collection(db, "items"),
+          where("ownerId", "==", user.uid),
+          where("community", "==", activeCommunity)
+        );
 
     const unsubscribe = onSnapshot(
       myItemsQuery,
@@ -27,10 +40,10 @@ export const useMyItems = ({ activeCommunity, user }) => {
         const items = snapshot.docs.map((itemDoc) => ({
           id: itemDoc.id,
           ...itemDoc.data(),
-        }));
+        })).sort(newestFirst);
 
         setItemsState({
-          community: activeCommunity,
+          communityKey,
           ownerId: user.uid,
           items,
         });
@@ -38,7 +51,7 @@ export const useMyItems = ({ activeCommunity, user }) => {
       (error) => {
         alert(error.message);
         setItemsState({
-          community: activeCommunity,
+          communityKey,
           ownerId: user.uid,
           items: [],
         });
@@ -46,14 +59,15 @@ export const useMyItems = ({ activeCommunity, user }) => {
     );
 
     return () => unsubscribe();
-  }, [activeCommunity, user]);
+  }, [activeCommunity, activeCommunityId, user]);
 
+  const communityKey = activeCommunityId || activeCommunity;
   const loading =
-    activeCommunity &&
+    communityKey &&
     user &&
-    (itemsState.community !== activeCommunity || itemsState.ownerId !== user.uid);
+    (itemsState.communityKey !== communityKey || itemsState.ownerId !== user.uid);
   const items =
-    itemsState.community === activeCommunity && itemsState.ownerId === user?.uid
+    itemsState.communityKey === communityKey && itemsState.ownerId === user?.uid
       ? itemsState.items
       : [];
 

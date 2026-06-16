@@ -25,7 +25,7 @@ import { cropImageToBase64, readImageFileForCrop } from "../utils/imageUtils";
 const inputClass =
   "w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
 
-function MyItems({ activeCommunity, user }) {
+function MyItems({ activeCommunity, activeCommunityId, user }) {
   const [editingItemId, setEditingItemId] = useState("");
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
@@ -49,8 +49,16 @@ function MyItems({ activeCommunity, user }) {
     profile,
     profileLoading,
   } = usePublicProfileModal();
-  const { items, loading } = useMyItems({ activeCommunity, user });
-  const { incomingRequests } = useRequests({ activeCommunity, user });
+  const { items, loading } = useMyItems({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
+  const { incomingRequests } = useRequests({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
 
   const activeRequestByItemId = useMemo(() => {
     const map = new Map();
@@ -139,7 +147,12 @@ function MyItems({ activeCommunity, user }) {
     }
 
     try {
-      await deleteItemDocument({ activeCommunity, itemId, user });
+      await deleteItemDocument({
+        activeCommunity,
+        activeCommunityId,
+        itemId,
+        user,
+      });
       return true;
     } catch (error) {
       alert(error.message);

@@ -28,6 +28,12 @@ function PickupModal({
     return null;
   }
 
+  const listedPickupLocation = modal.request.preferredPickupLocation?.trim();
+  const lockPickupLocation = modal.mode === "edit" && Boolean(listedPickupLocation);
+  const pickupLocationClass = lockPickupLocation
+    ? `${inputClass} cursor-not-allowed bg-stone-100 text-slate-500`
+    : inputClass;
+
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-slate-950/45 px-4 py-6">
       <div
@@ -92,11 +98,18 @@ function PickupModal({
             <label className="grid gap-2 text-sm font-semibold text-slate-700">
               Pickup Location
               <input
-                className={inputClass}
+                className={pickupLocationClass}
                 type="text"
                 value={pickupLocation}
+                readOnly={lockPickupLocation}
+                aria-readonly={lockPickupLocation}
                 onChange={(event) => onLocationChange(event.target.value)}
               />
+              {lockPickupLocation && (
+                <span className="text-xs font-semibold text-slate-500">
+                  Uses the pickup location specified in the item listing.
+                </span>
+              )}
             </label>
 
             <label className="grid gap-2 text-sm font-semibold text-slate-700">

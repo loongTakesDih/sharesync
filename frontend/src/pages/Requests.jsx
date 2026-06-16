@@ -23,7 +23,7 @@ import { fetchUserProfile } from "../services/userService";
 import { formatFirestoreDate } from "../utils/formatDate";
 import { activeBorrowingStatuses } from "../utils/requestStatus";
 
-function Requests({ activeCommunity, user }) {
+function Requests({ activeCommunity, activeCommunityId, user }) {
   const [actionId, setActionId] = useState("");
   const [message, setMessage] = useState("");
   const [pickupModal, setPickupModal] = useState(null);
@@ -52,7 +52,7 @@ function Requests({ activeCommunity, user }) {
     incomingRequests,
     outgoingRequests,
     requestsLoading,
-  } = useRequests({ activeCommunity, user });
+  } = useRequests({ activeCommunity, activeCommunityId, user });
 
   const relatedUserKey = useMemo(
     () =>
@@ -115,7 +115,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await withdrawRequestDocument({ activeCommunity, request, user });
+      await withdrawRequestDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Request withdrawn.");
     } catch (error) {
       setMessage(error.message);
@@ -135,7 +140,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await rejectRequestDocument({ activeCommunity, request, user });
+      await rejectRequestDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Request rejected.");
     } catch (error) {
       setMessage(error.message);
@@ -157,7 +167,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await acceptRequestDocument({ activeCommunity, request, user });
+      await acceptRequestDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Request accepted successfully.");
     } catch (error) {
       console.error("Error accepting request:", error);
@@ -168,11 +183,14 @@ function Requests({ activeCommunity, user }) {
   };
 
   const openPickupEditor = (request) => {
+    const presetPickupLocation =
+      request.preferredPickupLocation || request.pickupLocation || "";
+
     setPickupModal({
       mode: "edit",
       request,
     });
-    setPickupLocation(request.pickupLocation || "");
+    setPickupLocation(presetPickupLocation);
     setPickupDate(request.pickupDate || "");
     setPickupTime(request.pickupTime || "");
     setPickupNote(request.pickupNote || "");
@@ -215,6 +233,7 @@ function Requests({ activeCommunity, user }) {
     try {
       await savePickupDetailsDocument({
         activeCommunity,
+        activeCommunityId,
         pickupDate,
         pickupLocation,
         pickupNote,
@@ -250,6 +269,7 @@ function Requests({ activeCommunity, user }) {
     try {
       await requestPickupChangeDocument({
         activeCommunity,
+        activeCommunityId,
         message: pickupChangeMessage,
         request: pickupModal.request,
         user,
@@ -275,7 +295,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await confirmPickupDocument({ activeCommunity, request, user });
+      await confirmPickupDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Pickup confirmed.");
     } catch (error) {
       setMessage(error.message);
@@ -295,7 +320,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await confirmHandoverDocument({ activeCommunity, request, user });
+      await confirmHandoverDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Item marked as borrowed.");
     } catch (error) {
       setMessage(error.message);
@@ -315,7 +345,12 @@ function Requests({ activeCommunity, user }) {
     setMessage("");
 
     try {
-      await markReturnedDocument({ activeCommunity, request, user });
+      await markReturnedDocument({
+        activeCommunity,
+        activeCommunityId,
+        request,
+        user,
+      });
       setMessage("Return marked. Waiting for owner confirmation.");
     } catch (error) {
       setMessage(error.message);
@@ -354,6 +389,7 @@ function Requests({ activeCommunity, user }) {
     try {
       await inspectReturnDocument({
         activeCommunity,
+        activeCommunityId,
         condition: returnCondition,
         note: returnInspectionNote,
         request: inspectionModal.request,
@@ -400,6 +436,7 @@ function Requests({ activeCommunity, user }) {
     try {
       await resolveReturnIssueDocument({
         activeCommunity,
+        activeCommunityId,
         makeItemAvailable,
         note: issueResolutionNote,
         request: resolveModal.request,
