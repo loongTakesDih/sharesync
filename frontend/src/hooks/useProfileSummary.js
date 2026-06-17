@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
+import {
+  activeBorrowingStatuses,
+  preHandoverStatuses,
+} from "../utils/requestStatus";
 
 export const lendingFlowStatuses = [
-  "approved",
-  "pickup_scheduled",
-  "pickup_change_requested",
-  "pickup_confirmed",
-  "borrowed",
-  "return_pending",
-  "return_issue",
+  ...preHandoverStatuses,
+  ...activeBorrowingStatuses,
 ];
 
 export const activeLendingRequestStatuses = [
@@ -96,7 +95,7 @@ export const useProfileSummary = (
   const lendingStats = useMemo(() => {
     const currentlyLentItemIds = new Set(
       ownerRequests
-        .filter((request) => lendingFlowStatuses.includes(request.status))
+        .filter((request) => activeBorrowingStatuses.includes(request.status))
         .map((request) => request.itemId)
         .filter(Boolean)
     );
@@ -120,7 +119,7 @@ export const useProfileSummary = (
   const borrowingStats = useMemo(
     () => ({
       activeBorrowedItems: borrowerRequests.filter((request) =>
-        lendingFlowStatuses.includes(request.status)
+        activeBorrowingStatuses.includes(request.status)
       ),
       completedBorrowedItems: borrowerRequests.filter(
         (request) => request.status === "completed"

@@ -5,6 +5,8 @@ import ItemDetailModal from "./ItemDetailModal";
 import ItemForm from "../items/ItemForm";
 import ImageCropModal from "../items/ImageCropModal";
 import EmptyState from "../ui/EmptyState";
+import PageHeader from "../ui/PageHeader";
+import SectionCard from "../ui/SectionCard";
 import { usePublicProfileModal } from "../../hooks/usePublicProfileModal";
 import { useItems } from "../../hooks/useItems";
 import { useRequests } from "../../hooks/useRequests";
@@ -252,29 +254,18 @@ function MarketplaceView({
     : false;
 
   return (
-    <section className="grid gap-7">
-      <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-        <div className="grid gap-6 bg-gradient-to-br from-emerald-50 via-white to-amber-50 px-5 py-6 sm:px-8 lg:grid-cols-[1.35fr_0.65fr] lg:px-10 lg:py-8">
-          <div className="min-w-0">
-            <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-              Marketplace
-            </p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              Borrow useful items from neighbors nearby.
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Browse available listings in{" "}
-              <span className="font-bold text-emerald-800">
+    <section className="grid gap-6">
+      <PageHeader
+        actions={
+          <div className="grid w-full gap-3">
+            <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Active community
+              </p>
+              <p className="mt-1 truncate text-sm font-black text-slate-900">
                 {activeCommunity}
-              </span>
-              , send requests, and keep handovers organized.
-            </p>
-          </div>
-
-          <div className="flex flex-col justify-end gap-3 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">
-              Ready to share something useful?
-            </p>
+              </p>
+            </div>
             <button
               className="rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800"
               type="button"
@@ -283,49 +274,39 @@ function MarketplaceView({
               List an Item
             </button>
           </div>
-        </div>
-
-        <div className="grid gap-4 border-t border-stone-100 px-5 py-5 sm:px-8 lg:grid-cols-[1fr_auto] lg:px-10">
-          <label className="relative block">
+        }
+        eyebrow="Marketplace"
+        subtitle="Search, filter, and request useful items shared by neighbors nearby."
+        title="Browse community listings"
+      >
+        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <label className="block">
             <span className="sr-only">Search items</span>
             <input
-              className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4 text-base font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-4 text-base font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
               type="search"
               placeholder="Search tools, books, kitchen items..."
               value={searchTerm}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </label>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:justify-end">
-            <button
-              className={
-                activeCategory === "All"
-                  ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-                  : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50"
-              }
-              type="button"
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:max-w-xl">
+            <CategoryButton
+              active={activeCategory === "All"}
+              label="All"
               onClick={() => setActiveCategory("All")}
-            >
-              All
-            </button>
+            />
             {itemCategories.map((itemCategory) => (
-              <button
-                className={
-                  activeCategory === itemCategory
-                    ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-                    : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50"
-                }
+              <CategoryButton
+                active={activeCategory === itemCategory}
                 key={itemCategory}
-                type="button"
+                label={itemCategory}
                 onClick={() => setActiveCategory(itemCategory)}
-              >
-                {itemCategory}
-              </button>
+              />
             ))}
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       {message && (
         <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
@@ -334,24 +315,19 @@ function MarketplaceView({
       )}
 
       {showListForm && (
-        <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-                New Listing
-              </p>
-              <h2 className="mt-1 text-2xl font-black text-slate-950">
-                List an item for {activeCommunity}
-              </h2>
-            </div>
+        <SectionCard
+          actions={
             <button
-              className="self-start rounded-full border border-stone-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50"
+              className="rounded-full border border-stone-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50"
               type="button"
               onClick={() => setShowListForm(false)}
             >
               Cancel
             </button>
-          </div>
+          }
+          subtitle={`Create a listing for ${activeCommunity}.`}
+          title="New Listing"
+        >
           <ItemForm
             category={category}
             condition={condition}
@@ -370,53 +346,93 @@ function MarketplaceView({
             preferredPickupLocation={preferredPickupLocation}
             saving={saving}
           />
-        </div>
+        </SectionCard>
       )}
 
-      <div>
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-950">
-              Community Listings
-            </h2>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}{" "}
-              shown
-            </p>
-          </div>
-        </div>
+      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-28 lg:self-start">
+          <SectionCard
+            subtitle={`${filteredItems.length} of ${items.length} listings shown.`}
+            title="Filters"
+          >
+            <div className="grid gap-5">
+              <label className="grid gap-2 text-sm font-bold text-slate-700">
+                Search
+                <input
+                  className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  type="search"
+                  placeholder="Search listings"
+                  value={searchTerm}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                />
+              </label>
+              <div>
+                <p className="text-sm font-bold text-slate-700">Category</p>
+                <div className="mt-3 flex flex-wrap gap-2 lg:grid">
+                  <CategoryButton
+                    active={activeCategory === "All"}
+                    label="All"
+                    onClick={() => setActiveCategory("All")}
+                  />
+                  {itemCategories.map((itemCategory) => (
+                    <CategoryButton
+                      active={activeCategory === itemCategory}
+                      key={itemCategory}
+                      label={itemCategory}
+                      onClick={() => setActiveCategory(itemCategory)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        </aside>
 
-        {loading && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div
-                className="h-72 animate-pulse rounded-3xl border border-stone-200 bg-white shadow-sm"
-                key={item}
-              />
-            ))}
+        <section className="min-w-0">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight text-slate-950">
+                Available Listings
+              </h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}{" "}
+                shown
+              </p>
+            </div>
           </div>
-        )}
 
-        {!loading && filteredItems.length === 0 && (
-          <EmptyState>
-            No matching items here yet. Try another search or list something
-            useful for your community.
-          </EmptyState>
-        )}
+          {loading && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  className="h-80 animate-pulse rounded-2xl border border-stone-200 bg-white shadow-sm"
+                  key={item}
+                />
+              ))}
+            </div>
+          )}
 
-        {!loading && filteredItems.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredItems.map((item) => (
-              <ItemCard
-                item={item}
-                key={item.id}
-                onOpenDetail={setSelectedItem}
-                onOpenUserProfile={openUserProfile}
-                user={user}
-              />
-            ))}
-          </div>
-        )}
+          {!loading && filteredItems.length === 0 && (
+            <EmptyState>
+              No matching items here yet. Try another search or list something
+              useful for your community.
+            </EmptyState>
+          )}
+
+          {!loading && filteredItems.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredItems.map((item) => (
+                <ItemCard
+                  item={item}
+                  key={item.id}
+                  onOpenDetail={setSelectedItem}
+                  onOpenUserProfile={openUserProfile}
+                  user={user}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       <ItemDetailModal
@@ -452,6 +468,22 @@ function MarketplaceView({
         zoom={cropZoom}
       />
     </section>
+  );
+}
+
+function CategoryButton({ active, label, onClick }) {
+  return (
+    <button
+      className={
+        active
+          ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white"
+          : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50"
+      }
+      type="button"
+      onClick={onClick}
+    >
+      {label}
+    </button>
   );
 }
 

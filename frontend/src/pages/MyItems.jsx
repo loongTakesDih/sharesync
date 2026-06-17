@@ -4,6 +4,7 @@ import EmptyState from "../components/ui/EmptyState";
 import ItemCard from "../components/items/ItemCard";
 import ImageCropModal from "../components/items/ImageCropModal";
 import ItemDetailModal from "../components/marketplace/ItemDetailModal";
+import PageHeader from "../components/ui/PageHeader";
 import PublicProfileModal from "../components/profile/PublicProfileModal";
 import { useMyItems } from "../hooks/useMyItems";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
@@ -17,6 +18,7 @@ import {
   activeBorrowingStatuses,
   getStatusBadgeClass,
   getStatusBadgeLabel,
+  preHandoverStatuses,
 } from "../utils/requestStatus";
 import { isValidItemCategory, itemCategories } from "../utils/itemCategories";
 import { itemConditions } from "../utils/itemCondition";
@@ -25,7 +27,7 @@ import { cropImageToBase64, readImageFileForCrop } from "../utils/imageUtils";
 const inputClass =
   "w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
 
-function MyItems({ activeCommunity, activeCommunityId, user }) {
+function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
   const [editingItemId, setEditingItemId] = useState("");
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
@@ -66,7 +68,7 @@ function MyItems({ activeCommunity, activeCommunityId, user }) {
     incomingRequests.forEach((request) => {
       if (
         request.status === "pending" ||
-        request.status === "pickup_change_requested" ||
+        preHandoverStatuses.includes(request.status) ||
         activeBorrowingStatuses.includes(request.status)
       ) {
         map.set(request.itemId, request);
@@ -139,7 +141,7 @@ function MyItems({ activeCommunity, activeCommunityId, user }) {
 
   const deleteItem = async (itemId) => {
     const confirmed = window.confirm(
-      "Delete this item? Active pending or approved requests will be closed."
+      "Delete this item? Open requests and borrowing records will be closed."
     );
 
     if (!confirmed) {
@@ -223,38 +225,35 @@ function MyItems({ activeCommunity, activeCommunityId, user }) {
 
   return (
     <section className="grid gap-6">
-      <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-          Profile Tools
-        </p>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-950">
-              My Items
-            </h1>
-            <p className="mt-2 text-slate-600">
-              Manage your listings in{" "}
-              <span className="font-bold text-emerald-800">
-                {activeCommunity}
-              </span>
-              .
-            </p>
+      <PageHeader
+        actions={
+          <div className="grid w-full gap-3">
+            <span className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm">
+              {items.length} listed
+            </span>
+            <button
+              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+              type="button"
+              onClick={onListItem}
+            >
+              List Item
+            </button>
           </div>
-          <span className="rounded-full bg-stone-100 px-4 py-2 text-sm font-bold text-slate-600">
-            {items.length} listed
-          </span>
-        </div>
-      </div>
+        }
+        eyebrow="Owner tools"
+        subtitle={`Manage your listings, availability, and active request status in ${activeCommunity}.`}
+        title="My Items"
+      />
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {loading && (
-          <p className="rounded-3xl border border-stone-200 bg-white p-6 text-slate-600 shadow-sm sm:col-span-2 xl:col-span-3">
+          <p className="rounded-2xl border border-stone-200 bg-white p-6 text-slate-600 shadow-sm sm:col-span-2 xl:col-span-3 2xl:col-span-4">
             Loading your items...
           </p>
         )}
 
         {!loading && items.length === 0 && (
-          <div className="sm:col-span-2 xl:col-span-3">
+          <div className="sm:col-span-2 xl:col-span-3 2xl:col-span-4">
             <EmptyState>You have no items here yet.</EmptyState>
           </div>
         )}
@@ -559,7 +558,7 @@ function OwnerManagementActions({
         Edit listing
       </button>
       <button
-        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
         type="button"
         disabled={availabilityId === item.id}
         onClick={() => onToggleAvailability(item)}

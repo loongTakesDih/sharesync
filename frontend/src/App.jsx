@@ -173,6 +173,10 @@ function App() {
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}
           activeCommunityObject={activeCommunityObject}
+          onListItem={() => {
+            navigate(pagePaths.browse);
+            setListIntent((current) => current + 1);
+          }}
           user={user}
           userProfile={userProfile}
         />
@@ -218,8 +222,8 @@ function App() {
 
   if (!authReady || profileLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 px-4 py-8 text-slate-800">
-        <div className="mx-auto max-w-6xl rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="min-h-screen bg-[#f8f6f1] px-4 py-8 text-slate-800">
+        <div className="mx-auto max-w-[1600px] rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <p className="text-slate-600">Loading ShareSync...</p>
         </div>
       </div>
@@ -254,8 +258,10 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 px-4 pb-10 text-slate-800 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-[#f8f6f1] text-slate-800">
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-64 bg-[linear-gradient(135deg,rgba(209,250,229,0.55),rgba(255,255,255,0)_58%)]" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 h-72 bg-[linear-gradient(315deg,rgba(254,243,199,0.45),rgba(255,255,255,0)_62%)]" />
+      <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 lg:px-8">
         <AppHeader
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}

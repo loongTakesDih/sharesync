@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PublicProfileModal from "../components/profile/PublicProfileModal";
+import PageHeader from "../components/ui/PageHeader";
 import PickupModal from "../components/requests/PickupModal";
 import RequestCard from "../components/requests/RequestCard";
 import RequestSection from "../components/requests/RequestSection";
@@ -21,7 +22,11 @@ import {
 } from "../services/requestService";
 import { fetchUserProfile } from "../services/userService";
 import { formatFirestoreDate } from "../utils/formatDate";
-import { activeBorrowingStatuses } from "../utils/requestStatus";
+import {
+  activeBorrowingStatuses,
+  ownerNeedsActionStatuses,
+  pendingBorrowerRequestStatuses,
+} from "../utils/requestStatus";
 
 function Requests({ activeCommunity, activeCommunityId, user }) {
   const [actionId, setActionId] = useState("");
@@ -156,7 +161,7 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
 
   const acceptRequest = async (request) => {
     const confirmed = window.confirm(
-      "Accept this request? Item will become unavailable."
+      "Approve this request? Item will become unavailable while pickup is arranged."
     );
 
     if (!confirmed) {
@@ -173,7 +178,8 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
         request,
         user,
       });
-      setMessage("Request accepted successfully.");
+      setMessage("Request approved. Add pickup details next.");
+      openPickupEditor(request);
     } catch (error) {
       console.error("Error accepting request:", error);
       setMessage(error.message || "Failed to accept request.");
@@ -452,68 +458,34 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
     }
   };
 
-  const needsActionRequests = [
-    ...incomingRequests
-      .filter(
-        (request) =>
-          request.status === "pending" && request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...incomingRequests
-      .filter(
-        (request) =>
-          request.status === "pickup_change_requested" &&
-          request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...incomingRequests
-      .filter(
-        (request) =>
-          request.status === "pickup_confirmed" &&
-          request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...incomingRequests
-      .filter(
-        (request) =>
-          request.status === "return_pending" && request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...incomingRequests
-      .filter(
-        (request) =>
-          request.status === "return_issue" && request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...outgoingRequests
-      .filter(
-        (request) =>
-          request.status === "pickup_scheduled" &&
-          request.borrowerId === user.uid
-      )
-      .map((request) => ({ direction: "outgoing", request })),
-  ];
+  const needsActionRequests = incomingRequests
+    .filter(
+      (request) =>
+        ownerNeedsActionStatuses.includes(request.status) &&
+        request.ownerId === user.uid
+    )
+    .map((request) => ({ direction: "incoming", request }));
   const activeRequests = [
     ...incomingRequests
       .filter(
         (request) =>
           activeBorrowingStatuses.includes(request.status) &&
-          !["pickup_confirmed", "return_pending"].includes(request.status)
+          request.ownerId === user.uid
       )
       .map((request) => ({ direction: "incoming", request })),
     ...outgoingRequests
       .filter(
         (request) =>
-          (activeBorrowingStatuses.includes(request.status) ||
-            request.status === "pickup_change_requested" ||
-            request.status === "return_issue") &&
-          request.status !== "pickup_scheduled"
+          activeBorrowingStatuses.includes(request.status) &&
+          request.borrowerId === user.uid
       )
       .map((request) => ({ direction: "outgoing", request })),
   ];
   const pendingRequests = outgoingRequests
     .filter(
-      (request) => request.status === "pending" && request.borrowerId === user.uid
+      (request) =>
+        pendingBorrowerRequestStatuses.includes(request.status) &&
+        request.borrowerId === user.uid
     )
     .map((request) => ({ direction: "outgoing", request }));
 
@@ -547,49 +519,49 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
 
   return (
     <section className="grid gap-6">
-      <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-          Profile Tools
-        </p>
-        <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
-          Requests
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Track item requests, pickups, borrowing, and returns in{" "}
-          <span className="font-semibold text-emerald-800">
-            {activeCommunity}
-          </span>
-          .
-        </p>
+      <PageHeader
+        eyebrow="Borrowing workflow"
+        meta={
+          <div className="grid w-full grid-cols-3 gap-2">
+            <MiniStat label="Action" value={needsActionRequests.length} />
+            <MiniStat label="Active" value={activeRequests.length} />
+            <MiniStat label="Pending" value={pendingRequests.length} />
+          </div>
+        }
+        subtitle={`Track requests, pickup coordination, active borrowing, and return steps in ${activeCommunity}.`}
+        title="Requests"
+      >
         {message && (
           <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
             {message}
           </p>
         )}
-      </div>
+      </PageHeader>
 
-      <RequestSection
-        className="bg-emerald-50/50"
-        emptyMessage="Nothing needs your action right now."
-        loading={requestsLoading}
-        renderRequestCard={renderRequestCard}
-        requests={needsActionRequests}
-        title="Needs Action"
-      />
-      <RequestSection
-        emptyMessage="No active borrowing records right now."
-        loading={requestsLoading}
-        renderRequestCard={renderRequestCard}
-        requests={activeRequests}
-        title="Active Borrowing"
-      />
-      <RequestSection
-        emptyMessage="You do not have outgoing requests waiting for a response."
-        loading={requestsLoading}
-        renderRequestCard={renderRequestCard}
-        requests={pendingRequests}
-        title="Pending Requests"
-      />
+      <div className="grid gap-6 xl:grid-cols-3 xl:items-start">
+        <RequestSection
+          className="bg-emerald-50/50"
+          emptyMessage="No action needed."
+          loading={requestsLoading}
+          renderRequestCard={renderRequestCard}
+          requests={needsActionRequests}
+          title="Needs Action"
+        />
+        <RequestSection
+          emptyMessage="No active borrowing records."
+          loading={requestsLoading}
+          renderRequestCard={renderRequestCard}
+          requests={activeRequests}
+          title="Active Borrowing"
+        />
+        <RequestSection
+          emptyMessage="No pending requests."
+          loading={requestsLoading}
+          renderRequestCard={renderRequestCard}
+          requests={pendingRequests}
+          title="Pending Requests"
+        />
+      </div>
       <PickupModal
         modal={pickupModal}
         onClose={closePickupModal}
@@ -634,6 +606,17 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
         profile={profile}
       />
     </section>
+  );
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white px-3 py-2 text-center shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
+    </div>
   );
 }
 

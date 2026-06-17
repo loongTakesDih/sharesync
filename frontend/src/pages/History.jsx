@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import PublicProfileModal from "../components/profile/PublicProfileModal";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+import PageHeader from "../components/ui/PageHeader";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
 import { formatFirestoreDate } from "../utils/formatDate";
@@ -109,28 +110,16 @@ function History({ activeCommunity, activeCommunityId, user }) {
 
   return (
     <section className="grid gap-6">
-      <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-          Profile Tools
-        </p>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-950">
-              History
-            </h1>
-            <p className="mt-2 text-slate-600">
-              Completed and closed sharing records in{" "}
-              <span className="font-bold text-emerald-800">
-                {activeCommunity}
-              </span>
-              .
-            </p>
-          </div>
-          <span className="rounded-full bg-stone-100 px-4 py-2 text-sm font-bold text-slate-600">
+      <PageHeader
+        eyebrow="Archive"
+        meta={
+          <span className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm">
             {history.length} record{history.length === 1 ? "" : "s"}
           </span>
-        </div>
-      </div>
+        }
+        subtitle={`Completed, rejected, withdrawn, and closed sharing records in ${activeCommunity}.`}
+        title="History"
+      />
 
       {requestsLoading && (
         <p className="rounded-3xl border border-stone-200 bg-white p-6 text-slate-600 shadow-sm">
@@ -143,7 +132,7 @@ function History({ activeCommunity, activeCommunityId, user }) {
       )}
 
       {!requestsLoading && history.length > 0 && (
-        <div className="grid gap-5">
+        <div className="relative grid gap-5 before:absolute before:bottom-0 before:left-4 before:top-0 before:hidden before:w-px before:bg-stone-200 lg:before:block">
           {history.map(({ direction, request }) => (
             <HistoryCard
               direction={direction}
@@ -180,8 +169,8 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
     request.issueResolutionNote;
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:border-emerald-100 hover:shadow-md">
-      <div className="grid gap-0 md:grid-cols-[12rem_1fr]">
+    <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:border-emerald-100 hover:shadow-md lg:ml-10">
+      <div className="grid gap-0 md:grid-cols-[14rem_1fr] 2xl:grid-cols-[16rem_1fr]">
         <div className="relative aspect-[4/3] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 md:aspect-auto">
           {request.itemImageBase64 ? (
             <img

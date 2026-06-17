@@ -11,6 +11,16 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { isValidItemCategory } from "../utils/itemCategories";
+import {
+  activeBorrowingStatuses,
+  preHandoverStatuses,
+} from "../utils/requestStatus";
+
+const relatedOpenRequestStatuses = [
+  "pending",
+  ...preHandoverStatuses,
+  ...activeBorrowingStatuses,
+];
 
 export const createItem = ({
   activeCommunity,
@@ -68,14 +78,14 @@ export const deleteItem = async ({
         where("itemId", "==", itemId),
         where("ownerId", "==", user.uid),
         where("communityId", "==", activeCommunityId),
-        where("status", "in", ["pending", "approved"])
+        where("status", "in", relatedOpenRequestStatuses)
       )
     : query(
         collection(db, "requests"),
         where("itemId", "==", itemId),
         where("ownerId", "==", user.uid),
         where("community", "==", activeCommunity),
-        where("status", "in", ["pending", "approved"])
+        where("status", "in", relatedOpenRequestStatuses)
       );
   const relatedRequestsSnapshot = await getDocs(relatedRequestsQuery);
   const batch = writeBatch(db);

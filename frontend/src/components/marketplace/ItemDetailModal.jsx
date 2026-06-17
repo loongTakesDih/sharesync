@@ -105,7 +105,7 @@ function ItemDetailModal({
   const isOwnItem = item.ownerId === user?.uid;
   const ownerProfile =
     ownerProfileState.ownerId === item.ownerId ? ownerProfileState.profile : null;
-  const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
+  const ownerLabel = item.ownerUsername || "ShareSync user";
   const categoryLabel = getItemCategoryLabel(item);
   const conditionLabel = getItemConditionLabel(item);
   const ownerTrustRating = ownerProfile ? getTrustRating(ownerProfile) : null;
@@ -153,7 +153,7 @@ function ItemDetailModal({
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/45 px-4 py-6">
       <div
-        className="max-h-[calc(100svh-3rem)] w-full max-w-6xl overflow-auto rounded-3xl border border-stone-200 bg-stone-50 shadow-2xl"
+        className="max-h-[calc(100svh-3rem)] w-full max-w-[1500px] overflow-auto rounded-2xl border border-stone-200 bg-[#f8f6f1] shadow-2xl"
         role="dialog"
         aria-modal="true"
       >
@@ -175,70 +175,72 @@ function ItemDetailModal({
           </button>
         </div>
 
-        <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
           <div className="grid gap-5">
             <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-              <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
-                {item.imageBase64 ? (
-                  <img
-                    alt={item.name}
-                    className="absolute inset-0 h-full w-full object-contain"
-                    src={item.imageBase64}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="grid h-28 w-28 place-items-center rounded-3xl bg-white/85 text-4xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
-                      {(item.name || "?").slice(0, 2).toUpperCase()}
+              <div className="grid gap-0 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,0.95fr)]">
+                <div className="relative min-h-80 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 xl:min-h-[34rem]">
+                  {item.imageBase64 ? (
+                    <img
+                      alt={item.name}
+                      className="absolute inset-0 h-full w-full object-contain"
+                      src={item.imageBase64}
+                    />
+                  ) : (
+                    <div className="flex h-full min-h-80 items-center justify-center">
+                      <div className="grid h-28 w-28 place-items-center rounded-3xl bg-white/85 text-4xl font-black text-emerald-800 shadow-sm ring-1 ring-white">
+                        {(item.name || "?").slice(0, 2).toUpperCase()}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid gap-5 p-5 sm:p-6">
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-                    {item.community || "Community"}
-                  </p>
-                  <h3 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-                    {item.name}
-                  </h3>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge className="bg-amber-50 text-amber-800 ring-amber-100">
-                      {categoryLabel}
-                    </Badge>
-                    <Badge className="bg-teal-50 text-teal-800 ring-teal-100">
-                      {conditionLabel}
-                    </Badge>
-                    <Badge
-                      className={
-                        item.available
-                          ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                          : "bg-stone-100 text-slate-600 ring-stone-200"
-                      }
-                    >
-                      {item.available ? "Available" : "Unavailable"}
-                    </Badge>
-                  </div>
+                  )}
                 </div>
 
-                <dl className="grid gap-3 sm:grid-cols-2">
-                  <DetailRow label="Listed by" value={ownerLabel} />
-                  <DetailRow label="Listed date" value={listedDate} />
-                  <DetailRow label="Community" value={item.community || "-"} />
-                  <DetailRow
-                    label="Preferred pickup location"
-                    value={preferredPickupLocation}
-                  />
-                </dl>
+                <div className="grid content-start gap-5 p-5 sm:p-6">
+                  <div>
+                    <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                      {item.community || "Community"}
+                    </p>
+                    <h3 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+                      {item.name}
+                    </h3>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Badge className="bg-amber-50 text-amber-800 ring-amber-100">
+                        {categoryLabel}
+                      </Badge>
+                      <Badge className="bg-teal-50 text-teal-800 ring-teal-100">
+                        {conditionLabel}
+                      </Badge>
+                      <Badge
+                        className={
+                          item.available
+                            ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                            : "bg-stone-100 text-slate-600 ring-stone-200"
+                        }
+                      >
+                        {item.available ? "Available" : "Unavailable"}
+                      </Badge>
+                    </div>
+                  </div>
 
-                <section className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                  <h4 className="text-sm font-black uppercase tracking-wide text-slate-500">
-                    Description
-                  </h4>
-                  <p className="mt-2 whitespace-pre-wrap leading-7 text-slate-700">
-                    {item.description || "No description provided."}
-                  </p>
-                </section>
+                  <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    <DetailRow label="Listed by" value={ownerLabel} />
+                    <DetailRow label="Listed date" value={listedDate} />
+                    <DetailRow label="Community" value={item.community || "-"} />
+                    <DetailRow
+                      label="Preferred pickup location"
+                      value={preferredPickupLocation}
+                    />
+                  </dl>
+
+                  <section className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
+                    <h4 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                      Description
+                    </h4>
+                    <p className="mt-2 max-w-prose whitespace-pre-wrap leading-7 text-slate-700">
+                      {item.description || "No description provided."}
+                    </p>
+                  </section>
+                </div>
               </div>
             </div>
 
@@ -296,7 +298,7 @@ function ItemDetailModal({
                     </h3>
                   </div>
                 </div>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {similarListings.map((similarItem) => (
                     <SimilarListingCard
                       item={similarItem}

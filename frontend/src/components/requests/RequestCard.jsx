@@ -1,11 +1,12 @@
 import Badge from "../ui/Badge";
 import {
+  activeBorrowingStatuses,
   closedRequestStatuses,
   getBorrowerLabel,
   getOwnerLabel,
   getStatusBadgeClass,
-  getStatusBadgeLabel,
   hasPickupDetails,
+  pendingBorrowerRequestStatuses,
 } from "../../utils/requestStatus";
 import { getReturnConditionLabel } from "../../utils/returnInspection";
 import {
@@ -50,10 +51,11 @@ function RequestCard({
   const pastTimestamp = getPastTimestamp(request);
   const trustRating = trustProfile ? getTrustRating(trustProfile) : null;
   const trustStats = trustProfile ? getTrustStats(trustProfile) : null;
+  const statusBadgeLabel = getRequestCardStatusLabel(request, isIncoming);
 
   return (
     <article
-      className={`flex flex-col gap-5 rounded-3xl border bg-white p-5 shadow-sm transition hover:border-emerald-100 hover:shadow-md md:flex-row md:items-start md:justify-between ${
+      className={`flex flex-col gap-5 rounded-2xl border bg-white p-5 shadow-sm transition hover:border-emerald-100 hover:shadow-md md:flex-row md:items-start md:justify-between ${
         closedRequestStatuses.includes(request.status)
           ? "border-stone-200 opacity-80"
           : "border-stone-200"
@@ -64,7 +66,7 @@ function RequestCard({
         <Badge
           className={`mt-3 ${getStatusBadgeClass(request.status)}`}
         >
-          {getStatusBadgeLabel(request.status)}
+          {statusBadgeLabel}
         </Badge>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-600">
           <span>{isIncoming ? "Borrower:" : "Owner:"}</span>
@@ -110,25 +112,45 @@ function RequestCard({
             This item was deleted by the owner.
           </small>
         )}
-        {request.status === "approved" &&
-          isIncoming &&
-          renderPickupSummary(request)}
-        {request.status === "approved" && !isIncoming && (
+        {request.status === "approved" && isIncoming && (
           <small className="mt-2 block text-sm text-slate-500">
-            Waiting for owner to set pickup details.
+            Set pickup details for the borrower.
           </small>
         )}
-        {request.status === "pickup_scheduled" && renderPickupSummary(request)}
-        {request.status === "pickup_change_requested" && (
-          <small className="mt-2 block rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-100">
-            Requested change: {request.pickupChangeMessage || "No message provided."}
+        {request.status === "approved" && !isIncoming && (
+          <small className="mt-2 block text-sm text-slate-500">
+            Your request is still pending while the owner sets pickup details.
           </small>
+        )}
+        {request.status === "pickup_scheduled" && (
+          <>
+            {renderPickupSummary(request)}
+            <small className="mt-2 block text-sm text-slate-500">
+              {isIncoming
+                ? "Waiting for the borrower to confirm these pickup details."
+                : "Review the pickup details, then confirm or request a different time."}
+            </small>
+          </>
+        )}
+        {request.status === "pickup_change_requested" && (
+          <>
+            {renderPickupSummary(request)}
+            <small className="mt-2 block rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-100">
+              {isIncoming
+                ? `Requested change: ${
+                    request.pickupChangeMessage || "No message provided."
+                  }`
+                : "You requested a different pickup time. Waiting for the owner to update the details."}
+            </small>
+          </>
         )}
         {request.status === "pickup_confirmed" && (
           <>
             {renderPickupSummary(request)}
             <small className="mt-2 block text-sm text-slate-500">
-              Waiting for owner to confirm handover.
+              {isIncoming
+                ? "The borrower confirmed the pickup details. Confirm handover once the item is handed over."
+                : "Pickup confirmed. Waiting for the owner to confirm item handover."}
             </small>
           </>
         )}
@@ -191,7 +213,7 @@ function RequestCard({
                 type="button"
                 onClick={() => onAccept(request)}
               >
-                {actionId === request.id ? "Working..." : "Accept"}
+                {actionId === request.id ? "Working..." : "Approve & Set Pickup"}
               </button>
               <button
                 className={dangerButtonClass}
@@ -217,6 +239,14 @@ function RequestCard({
             </button>
           )}
 
+        {request.status === "approved" &&
+          !isIncoming &&
+          request.borrowerId === user.uid && (
+            <button className={mutedButtonClass} disabled type="button">
+              Waiting for Pickup Details
+            </button>
+          )}
+
           {request.status === "approved" &&
             isIncoming &&
             request.ownerId === user.uid && (
@@ -236,10 +266,10 @@ function RequestCard({
             request.ownerId === user.uid && (
               <button
                 className={mutedButtonClass}
+                disabled
                 type="button"
-                onClick={() => onEditPickup(request)}
               >
-                Edit Pickup Details
+                Waiting Borrower Confirmation
               </button>
             )}
 
@@ -278,6 +308,14 @@ function RequestCard({
               </button>
             )}
 
+          {request.status === "pickup_change_requested" &&
+            !isIncoming &&
+            request.borrowerId === user.uid && (
+              <button className={mutedButtonClass} disabled type="button">
+                Waiting Owner Update
+              </button>
+            )}
+
           {request.status === "pickup_confirmed" &&
             isIncoming &&
             request.ownerId === user.uid && (
@@ -290,6 +328,14 @@ function RequestCard({
                 {actionId === request.id
                   ? "Working..."
                   : "Confirm Item Handed Over"}
+              </button>
+            )}
+
+          {request.status === "pickup_confirmed" &&
+            !isIncoming &&
+            request.borrowerId === user.uid && (
+              <button className={mutedButtonClass} disabled type="button">
+                Waiting Handover
               </button>
             )}
 
@@ -334,6 +380,41 @@ function RequestCard({
 
       </div>
     </article>
+  );
+}
+
+function getRequestCardStatusLabel(request, isIncoming) {
+  if (!isIncoming && pendingBorrowerRequestStatuses.includes(request.status)) {
+    return "Pending Request";
+  }
+
+  if (activeBorrowingStatuses.includes(request.status)) {
+    return "Active Borrowing";
+  }
+
+  if (!isIncoming) {
+    return {
+      rejected: "Request Rejected",
+      withdrawn: "Withdrawn",
+      item_deleted: "Item No Longer Available",
+      completed: "Completed",
+    }[request.status] || request.status || "Pending Request";
+  }
+
+  return (
+    {
+      pending: "Needs Approval",
+      approved: "Set Pickup Details",
+      pickup_scheduled: "Waiting Borrower",
+      pickup_change_requested: "Pickup Change Requested",
+      pickup_confirmed: "Ready for Handover",
+      rejected: "Request Rejected",
+      withdrawn: "Withdrawn",
+      item_deleted: "Item No Longer Available",
+      completed: "Completed",
+    }[request.status] ||
+    request.status ||
+    "Needs Approval"
   );
 }
 

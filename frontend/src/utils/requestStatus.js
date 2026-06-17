@@ -8,12 +8,27 @@ export const closedRequestStatuses = [
   "completed",
 ];
 
-export const activeBorrowingStatuses = [
+export const preHandoverStatuses = [
   "approved",
   "pickup_scheduled",
+  "pickup_change_requested",
   "pickup_confirmed",
+];
+
+export const ownerNeedsActionStatuses = [
+  "pending",
+  ...preHandoverStatuses,
+];
+
+export const pendingBorrowerRequestStatuses = [
+  "pending",
+  ...preHandoverStatuses,
+];
+
+export const activeBorrowingStatuses = [
   "borrowed",
   "return_pending",
+  "return_issue",
 ];
 
 export const getStatusBadgeLabel = (status) =>

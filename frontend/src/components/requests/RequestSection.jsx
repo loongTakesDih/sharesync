@@ -10,7 +10,7 @@ function RequestSection({
 }) {
   return (
     <section
-      className={`rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}
+      className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xl font-black text-slate-950">{title}</h3>

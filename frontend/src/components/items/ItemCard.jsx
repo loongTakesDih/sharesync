@@ -10,13 +10,13 @@ function ItemCard({
   user,
 }) {
   const isOwnItem = item.ownerId === user?.uid;
-  const ownerLabel = item.ownerUsername || item.ownerEmail || item.ownerId;
+  const ownerLabel = item.ownerUsername || "Neighbor";
   const categoryLabel = getItemCategoryLabel(item);
   const canOpenDetail = Boolean(onOpenDetail);
   const hasFooterLeadingContent = showAvailability || Boolean(actions);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
       <div
         className={`block w-full flex-1 text-left ${
           canOpenDetail ? "cursor-pointer" : ""
