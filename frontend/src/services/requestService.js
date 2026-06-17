@@ -5,6 +5,8 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -16,6 +18,7 @@ import {
   getTrustAdjustmentForCondition,
   returnIssueConditions,
 } from "../utils/returnInspection";
+import { closedRequestStatuses } from "../utils/requestStatus";
 import {
   clampRating,
   defaultTrustStats,
@@ -55,6 +58,86 @@ export const getFreshRequest = async (requestId) => {
       ...requestSnapshot.data(),
     },
   };
+};
+
+export const subscribeToRequestMessages = (requestId, onMessages, onError) => {
+  if (!requestId) {
+    throw new Error("Request not found.");
+  }
+
+  const messagesQuery = query(
+    collection(db, "requests", requestId, "messages"),
+    orderBy("createdAt", "desc"),
+    limit(30)
+  );
+
+  return onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      const messages = snapshot.docs
+        .map((messageDoc) => ({
+          id: messageDoc.id,
+          ...messageDoc.data(),
+        }))
+        .reverse();
+
+      onMessages(messages);
+    },
+    (error) => {
+      onError?.(error);
+    }
+  );
+};
+
+export const sendRequestMessage = async ({
+  currentUser,
+  request,
+  text,
+  userProfile,
+}) => {
+  if (!currentUser) {
+    throw new Error("Please log in to send messages.");
+  }
+
+  const trimmedText = text.trim();
+
+  if (!trimmedText) {
+    throw new Error("Please enter a message.");
+  }
+
+  if (trimmedText.length > 1000) {
+    throw new Error("Messages must be 1000 characters or fewer.");
+  }
+
+  const { request: freshRequest } = await getFreshRequest(request.id);
+  const senderRole =
+    freshRequest.ownerId === currentUser.uid
+      ? "owner"
+      : freshRequest.borrowerId === currentUser.uid
+        ? "borrower"
+        : "";
+
+  if (!senderRole) {
+    throw new Error("You can only chat on your own requests.");
+  }
+
+  if (closedRequestStatuses.includes(freshRequest.status)) {
+    throw new Error("This conversation is closed.");
+  }
+
+  const senderUsername =
+    userProfile?.username ||
+    currentUser.displayName ||
+    currentUser.email ||
+    "User";
+
+  await addDoc(collection(db, "requests", freshRequest.id, "messages"), {
+    text: trimmedText,
+    senderId: currentUser.uid,
+    senderUsername,
+    senderRole,
+    createdAt: serverTimestamp(),
+  });
 };
 
 export const createRequest = async ({

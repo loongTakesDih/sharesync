@@ -32,6 +32,7 @@ function RequestCard({
   onConfirmHandover,
   onConfirmPickup,
   onEditPickup,
+  onOpenChat,
   onInspectReturn,
   onMarkReturned,
   onOpenUserProfile,
@@ -285,7 +286,7 @@ function RequestCard({
                   type="button"
                   onClick={() => onConfirmPickup(request)}
                 >
-                  {actionId === request.id ? "Working..." : "Confirm Pickup"}
+                  {actionId === request.id ? "Working..." : "OK"}
                 </button>
                 <button
                   className={mutedButtonClass}
@@ -380,6 +381,13 @@ function RequestCard({
               </button>
             )}
 
+        <button
+          className={mutedButtonClass}
+          type="button"
+          onClick={() => onOpenChat?.(request)}
+        >
+          Open Chat
+        </button>
       </div>
     </article>
   );

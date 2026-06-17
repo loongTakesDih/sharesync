@@ -3,6 +3,7 @@ import PublicProfileModal from "../components/profile/PublicProfileModal";
 import PageHeader from "../components/ui/PageHeader";
 import PickupModal from "../components/requests/PickupModal";
 import RequestCard from "../components/requests/RequestCard";
+import RequestChatDrawer from "../components/requests/RequestChatDrawer";
 import RequestSection from "../components/requests/RequestSection";
 import ResolveIssueModal from "../components/requests/ResolveIssueModal";
 import ReturnInspectionModal from "../components/requests/ReturnInspectionModal";
@@ -28,7 +29,7 @@ import {
   pendingBorrowerRequestStatuses,
 } from "../utils/requestStatus";
 
-function Requests({ activeCommunity, activeCommunityId, user }) {
+function Requests({ activeCommunity, activeCommunityId, user, userProfile }) {
   const [actionId, setActionId] = useState("");
   const [message, setMessage] = useState("");
   const [pickupModal, setPickupModal] = useState(null);
@@ -46,6 +47,7 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
   const [issueResolutionNote, setIssueResolutionNote] = useState("");
   const [makeItemAvailable, setMakeItemAvailable] = useState(true);
   const [returnSaving, setReturnSaving] = useState(false);
+  const [chatRequest, setChatRequest] = useState(null);
   const [profileMap, setProfileMap] = useState({});
   const {
     closeUserProfile,
@@ -500,6 +502,7 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
       onConfirmHandover={confirmHandover}
       onConfirmPickup={confirmPickup}
       onEditPickup={openPickupEditor}
+      onOpenChat={setChatRequest}
       onInspectReturn={openInspectionModal}
       onMarkReturned={markReturned}
       onOpenUserProfile={openUserProfile}
@@ -520,7 +523,7 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
   return (
     <section className="grid gap-6">
       <PageHeader
-        eyebrow="🤝 Borrowing workflow"
+        eyebrow="Borrowing workflow"
         meta={
           <div className="grid w-full grid-cols-3 gap-2">
             <MiniStat label="Action" value={needsActionRequests.length} />
@@ -599,6 +602,13 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
         onNoteChange={setIssueResolutionNote}
         onSubmit={submitResolveIssue}
         saving={returnSaving}
+      />
+      <RequestChatDrawer
+        key={chatRequest?.id || "request-chat"}
+        onClose={() => setChatRequest(null)}
+        request={chatRequest}
+        user={user}
+        userProfile={userProfile}
       />
       <PublicProfileModal
         loading={profileLoading}
