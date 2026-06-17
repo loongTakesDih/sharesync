@@ -111,14 +111,14 @@ function History({ activeCommunity, activeCommunityId, user }) {
   return (
     <section className="grid gap-6">
       <PageHeader
-        eyebrow="Archive"
+        eyebrow="🕘 Archive"
         meta={
           <span className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm">
             {history.length} record{history.length === 1 ? "" : "s"}
           </span>
         }
         subtitle={`Completed, rejected, withdrawn, and closed sharing records in ${activeCommunity}.`}
-        title="History"
+        title="Borrowing History 🕘"
       />
 
       {requestsLoading && (
@@ -128,7 +128,7 @@ function History({ activeCommunity, activeCommunityId, user }) {
       )}
 
       {!requestsLoading && history.length === 0 && (
-        <EmptyState>No closed records yet.</EmptyState>
+          <EmptyState>No closed records yet.</EmptyState>
       )}
 
       {!requestsLoading && history.length > 0 && (
@@ -169,7 +169,7 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
     request.issueResolutionNote;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:border-emerald-100 hover:shadow-md lg:ml-10">
+    <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md lg:ml-10">
       <div className="grid gap-0 md:grid-cols-[14rem_1fr] 2xl:grid-cols-[16rem_1fr]">
         <div className="relative aspect-[4/3] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 md:aspect-auto">
           {request.itemImageBase64 ? (

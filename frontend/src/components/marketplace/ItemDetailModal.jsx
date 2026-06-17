@@ -19,7 +19,7 @@ const DetailRow = ({ label, value }) => (
 function SimilarListingCard({ item, onOpenDetail }) {
   return (
     <button
-      className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+      className="group overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
       type="button"
       onClick={() => onOpenDetail(item)}
     >
@@ -27,7 +27,7 @@ function SimilarListingCard({ item, onOpenDetail }) {
         {item.imageBase64 ? (
           <img
             alt={item.name}
-            className="absolute inset-0 h-full w-full object-contain"
+            className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             src={item.imageBase64}
           />
         ) : (
@@ -177,13 +177,13 @@ function ItemDetailModal({
 
         <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
           <div className="grid gap-5">
-            <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+            <div className="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
               <div className="grid gap-0 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,0.95fr)]">
                 <div className="relative min-h-80 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 xl:min-h-[34rem]">
                   {item.imageBase64 ? (
                     <img
                       alt={item.name}
-                      className="absolute inset-0 h-full w-full object-contain"
+                      className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                       src={item.imageBase64}
                     />
                   ) : (
@@ -217,24 +217,24 @@ function ItemDetailModal({
                             : "bg-stone-100 text-slate-600 ring-stone-200"
                         }
                       >
-                        {item.available ? "Available" : "Unavailable"}
+                        {item.available ? "✅ Available" : "⚠️ Unavailable"}
                       </Badge>
                     </div>
                   </div>
 
                   <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                    <DetailRow label="Listed by" value={ownerLabel} />
+                    <DetailRow label="👤 Listed by" value={ownerLabel} />
                     <DetailRow label="Listed date" value={listedDate} />
-                    <DetailRow label="Community" value={item.community || "-"} />
+                    <DetailRow label="🏘️ Community" value={item.community || "-"} />
                     <DetailRow
-                      label="Preferred pickup location"
+                      label="📍 Preferred pickup"
                       value={preferredPickupLocation}
                     />
                   </dl>
 
                   <section className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <h4 className="text-sm font-black uppercase tracking-wide text-slate-500">
-                      Description
+                    ✨ Description
                     </h4>
                     <p className="mt-2 max-w-prose whitespace-pre-wrap leading-7 text-slate-700">
                       {item.description || "No description provided."}
@@ -246,7 +246,7 @@ function ItemDetailModal({
 
             <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
               <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-                Meet the Lender
+                👤 Meet the Owner
               </p>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -265,7 +265,7 @@ function ItemDetailModal({
                   </p>
                   {ownerTrustStats && (
                     <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Completed borrows: {ownerTrustStats.completedBorrows}
+                      🤝 Completed borrows: {ownerTrustStats.completedBorrows}
                     </p>
                   )}
                 </div>
@@ -291,7 +291,7 @@ function ItemDetailModal({
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-                      Similar listings
+                      ✨ Similar listings
                     </p>
                     <h3 className="mt-1 text-xl font-black text-slate-950">
                       More in {categoryLabel}
@@ -324,7 +324,7 @@ function ItemDetailModal({
                       : "bg-stone-100 text-slate-600 ring-stone-200"
                   }
                 >
-                  {item.available ? "Available" : "Unavailable"}
+                  {item.available ? "✅ Available" : "⚠️ Unavailable"}
                 </Badge>
               )}
             </div>
@@ -335,7 +335,7 @@ function ItemDetailModal({
               <div className="mt-5 grid gap-3">{ownerActions}</div>
             ) : (
               <button
-                className="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500"
+                className="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-500 disabled:hover:scale-100"
                 type="button"
                 disabled={!canRequest}
                 onClick={() => onRequest(item)}

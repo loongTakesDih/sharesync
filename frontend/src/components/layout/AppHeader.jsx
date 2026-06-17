@@ -36,7 +36,7 @@ function AppHeader({
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 lg:flex-row lg:items-center">
         <div className="flex items-center justify-between gap-3">
           <button
-            className="flex items-center gap-3 rounded-2xl px-1 py-1 text-left"
+            className="flex items-center gap-3 rounded-2xl px-1 py-1 text-left transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]"
             type="button"
             onClick={() => goTo(pagePaths.home)}
           >
@@ -54,11 +54,11 @@ function AppHeader({
           </button>
 
           <button
-            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 lg:hidden"
+            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98] lg:hidden"
             type="button"
             onClick={onListItem}
           >
-            List
+            📦 List
           </button>
         </div>
 
@@ -70,8 +70,8 @@ function AppHeader({
             <button
               className={
                 activePage === pageKey
-                  ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-                  : "whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-white hover:text-emerald-800"
+                  ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  : "whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:scale-[1.02] hover:bg-white hover:text-emerald-800 active:scale-[0.98]"
               }
               key={pageKey}
               onClick={() => goTo(pagePaths[pageKey])}
@@ -122,11 +122,11 @@ function AppHeader({
           </select>
 
           <button
-            className="hidden rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 lg:inline-flex"
+            className="hidden rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98] lg:inline-flex"
             type="button"
             onClick={onListItem}
           >
-            List Item
+            📦 List Item
           </button>
 
           <div className="relative">

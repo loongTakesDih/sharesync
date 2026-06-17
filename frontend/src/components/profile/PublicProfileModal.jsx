@@ -77,7 +77,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
               </p>
             )}
 
-            <Section title="Trust Overview">
+            <Section title="⭐ Trust Overview">
               <div className="grid gap-3">
                 <Stat label="Completed Borrows" value={stats.completedBorrows} />
                 <Stat label="Total Return Issues" value={stats.returnIssues} />
@@ -86,7 +86,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
           </aside>
 
           <main className="grid gap-5">
-            <Section title="Return Condition Breakdown">
+            <Section title="✨ Return Condition Breakdown">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <Stat label="Excellent Condition" value={stats.excellentReturns} />
                 <Stat label="Good Condition" value={stats.goodReturns} />
@@ -101,7 +101,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
               </div>
             </Section>
 
-            <Section title="Available Items from this User">
+            <Section title="📦 Available Items from this User">
               {availableItems.length === 0 && (
                 <EmptyState>No available listings found.</EmptyState>
               )}
@@ -142,7 +142,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                               : "bg-stone-100 text-slate-600 ring-stone-200"
                           }
                         >
-                          {item.available ? "Available" : "Unavailable"}
+                          {item.available ? "✅ Available" : "⚠️ Unavailable"}
                         </Badge>
                       </div>
                       <div className="flex flex-wrap gap-2">

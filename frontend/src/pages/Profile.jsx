@@ -29,14 +29,16 @@ function Profile({ activeCommunity, user, userProfile }) {
 
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="grid gap-6 xl:col-span-4">
-          <SectionCard title="Trust Overview">
+          <SectionCard title="⭐ Trust Overview">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <UiStatCard
+                icon="✅"
                 label="Completed Borrows"
                 tone="success"
                 value={trustStats.completedBorrows}
               />
               <UiStatCard
+                icon="⚠️"
                 label="Total Return Issues"
                 tone="warning"
                 value={trustStats.returnIssues}
@@ -44,18 +46,25 @@ function Profile({ activeCommunity, user, userProfile }) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Lending Activity">
+          <SectionCard title="🌱 Lending Activity">
             <div className="grid gap-3 sm:grid-cols-2">
-              <UiStatCard label="Listed Items" value={lendingStats.listedItems} />
               <UiStatCard
+                icon="📦"
+                label="Listed Items"
+                value={lendingStats.listedItems}
+              />
+              <UiStatCard
+                icon="✅"
                 label="Currently Available"
                 value={lendingStats.availableItems}
               />
               <UiStatCard
+                icon="🤝"
                 label="Currently Lent Out"
                 value={lendingStats.currentlyLentOut}
               />
               <UiStatCard
+                icon="🎉"
                 label="Completed Lends"
                 value={lendingStats.completedLends}
               />
@@ -66,7 +75,7 @@ function Profile({ activeCommunity, user, userProfile }) {
         <SectionCard
           className="xl:col-span-8"
           subtitle="Total return issues is a summary. These cards show the condition categories behind it."
-          title="Return Condition Breakdown"
+          title="✨ Return Condition Breakdown"
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <UiStatCard
@@ -106,7 +115,7 @@ function ProfileHeader({ activeCommunity, trustRating, userProfile }) {
     <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
       <div className="bg-gradient-to-br from-emerald-50 via-white to-amber-50 px-6 py-8 sm:px-8">
         <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
-          Profile
+          👤 Profile
         </p>
         <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -134,7 +143,7 @@ function ProfileHeader({ activeCommunity, trustRating, userProfile }) {
             </div>
           </div>
           <div className="rounded-2xl border border-white bg-white/80 p-5 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Trust Rating</p>
+            <p className="text-sm font-bold text-slate-500">⭐ Trust Rating</p>
             <TrustRatingMark className="mt-1" rating={trustRating} size="lg" />
           </div>
         </div>

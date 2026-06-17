@@ -13,7 +13,11 @@ import { useRequests } from "../../hooks/useRequests";
 import { createItem } from "../../services/itemService";
 import { createRequest } from "../../services/requestService";
 import { cropImageToBase64, readImageFileForCrop } from "../../utils/imageUtils";
-import { itemCategories, isValidItemCategory } from "../../utils/itemCategories";
+import {
+  getItemCategoryLabel,
+  itemCategories,
+  isValidItemCategory,
+} from "../../utils/itemCategories";
 import { closedRequestStatuses } from "../../utils/requestStatus";
 
 function MarketplaceView({
@@ -267,17 +271,17 @@ function MarketplaceView({
               </p>
             </div>
             <button
-              className="rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-800"
+              className="rounded-2xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
               type="button"
               onClick={() => setShowListForm(true)}
             >
-              List an Item
+              📦 List an Item
             </button>
           </div>
         }
-        eyebrow="Marketplace"
+        eyebrow="🔍 Marketplace"
         subtitle="Search, filter, and request useful items shared by neighbors nearby."
-        title="Browse community listings"
+        title="Browse Items 🔍"
       >
         <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
           <label className="block">
@@ -300,7 +304,7 @@ function MarketplaceView({
               <CategoryButton
                 active={activeCategory === itemCategory}
                 key={itemCategory}
-                label={itemCategory}
+                label={getItemCategoryLabel({ category: itemCategory })}
                 onClick={() => setActiveCategory(itemCategory)}
               />
             ))}
@@ -326,7 +330,7 @@ function MarketplaceView({
             </button>
           }
           subtitle={`Create a listing for ${activeCommunity}.`}
-          title="New Listing"
+          title="📦 New Listing"
         >
           <ItemForm
             category={category}
@@ -353,7 +357,7 @@ function MarketplaceView({
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <SectionCard
             subtitle={`${filteredItems.length} of ${items.length} listings shown.`}
-            title="Filters"
+            title="🔍 Filters"
           >
             <div className="grid gap-5">
               <label className="grid gap-2 text-sm font-bold text-slate-700">
@@ -378,7 +382,7 @@ function MarketplaceView({
                     <CategoryButton
                       active={activeCategory === itemCategory}
                       key={itemCategory}
-                      label={itemCategory}
+                      label={getItemCategoryLabel({ category: itemCategory })}
                       onClick={() => setActiveCategory(itemCategory)}
                     />
                   ))}
@@ -392,7 +396,7 @@ function MarketplaceView({
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                Available Listings
+                ✅ Available Listings
               </h2>
               <p className="mt-1 text-sm font-medium text-slate-500">
                 {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}{" "}
@@ -414,8 +418,7 @@ function MarketplaceView({
 
           {!loading && filteredItems.length === 0 && (
             <EmptyState>
-              No matching items here yet. Try another search or list something
-              useful for your community.
+              No matching items found. Try another category or search term.
             </EmptyState>
           )}
 
@@ -476,8 +479,8 @@ function CategoryButton({ active, label, onClick }) {
     <button
       className={
         active
-          ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-          : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50"
+          ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:scale-[1.02] hover:border-emerald-300 hover:bg-emerald-50 active:scale-[0.98]"
       }
       type="button"
       onClick={onClick}

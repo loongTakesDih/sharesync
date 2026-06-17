@@ -10,6 +10,7 @@ import { useItems } from "../hooks/useItems";
 import { useMyItems } from "../hooks/useMyItems";
 import { useRequests } from "../hooks/useRequests";
 import { createRequest } from "../services/requestService";
+import { getItemCategoryLabel } from "../utils/itemCategories";
 import {
   closedRequestStatuses,
   ownerNeedsActionStatuses,
@@ -229,15 +230,15 @@ function Home({
               </select>
             </label>
             <button
-              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
               type="button"
               onClick={onListItem}
             >
-              List an Item
+              📦 List an Item
             </button>
           </div>
         }
-        eyebrow="Home"
+        eyebrow="🏠 Home"
         subtitle="A focused dashboard for the next thing to check, borrow, or share in your community."
         title={`Welcome back, ${userProfile.username}.`}
       />
@@ -257,6 +258,13 @@ function Home({
                 label={stat.label}
                 loading={stat.loading}
                 note={stat.note}
+                icon={
+                  {
+                    "Available Items": "📦",
+                    "My Listed Items": "🏘️",
+                    "Needs Action": "🤝",
+                  }[stat.label]
+                }
                 tone={stat.label === "Needs Action" ? "success" : "neutral"}
                 value={stat.value}
               />
@@ -274,7 +282,7 @@ function Home({
               </button>
             }
             subtitle="A small, current slice of what is available now."
-            title={`Recent Available Items in ${activeCommunity}`}
+            title={`📦 Recent Available Items in ${activeCommunity}`}
           >
             {itemsLoading && (
               <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
@@ -295,16 +303,16 @@ function Home({
               <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
                 {recentAvailableItems.map((item) => (
                   <button
-                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+                    className="group overflow-hidden rounded-2xl border border-stone-200 bg-white text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedItem(item)}
                   >
-                    <div className="relative aspect-[4/3] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
                       {item.imageBase64 ? (
                         <img
                           alt={item.name}
-                          className="absolute inset-0 h-full w-full object-contain"
+                          className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                           src={item.imageBase64}
                         />
                       ) : (
@@ -320,7 +328,7 @@ function Home({
                         {item.name}
                       </h3>
                       <p className="line-clamp-1 text-sm font-semibold text-slate-500">
-                        {item.category || "Item"}
+                        {getItemCategoryLabel(item)}
                       </p>
                     </div>
                   </button>
@@ -342,7 +350,7 @@ function Home({
               </button>
             }
             subtitle="Requests that need your decision before handover."
-            title="Needs Action"
+            title="⚡ Needs Action"
           >
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
               <p className="text-5xl font-black text-emerald-900">
@@ -356,11 +364,11 @@ function Home({
             </div>
           </SectionCard>
 
-          <SectionCard title="Quick Actions">
+          <SectionCard title="✨ Quick Actions">
             <div className="grid gap-3">
               {actions.map((action) => (
                 <button
-                  className="rounded-2xl border border-stone-200 bg-white px-4 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
+                  className="rounded-2xl border border-stone-200 bg-white px-4 py-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98]"
                   key={action.label}
                   type="button"
                   onClick={action.onClick}
@@ -376,7 +384,7 @@ function Home({
             </div>
           </SectionCard>
 
-          <SectionCard title="Community Summary">
+          <SectionCard title="🏘️ Community Summary">
             <div className="grid gap-3">
               <SummaryRow label="Active community" value={activeCommunity} />
               <SummaryRow

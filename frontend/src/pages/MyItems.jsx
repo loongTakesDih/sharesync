@@ -232,17 +232,17 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
               {items.length} listed
             </span>
             <button
-              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
               type="button"
               onClick={onListItem}
             >
-              List Item
+              📦 List Item
             </button>
           </div>
         }
-        eyebrow="Owner tools"
+        eyebrow="📦 Owner tools"
         subtitle={`Manage your listings, availability, and active request status in ${activeCommunity}.`}
-        title="My Items"
+        title="My Shared Items 📦"
       />
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -254,7 +254,10 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
 
         {!loading && items.length === 0 && (
           <div className="sm:col-span-2 xl:col-span-3 2xl:col-span-4">
-            <EmptyState>You have no items here yet.</EmptyState>
+            <EmptyState>
+              You have not listed anything yet. Share your first item with the
+              community.
+            </EmptyState>
           </div>
         )}
 
@@ -551,14 +554,14 @@ function OwnerManagementActions({
   return (
     <>
       <button
-        className="w-full rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+        className="w-full rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
         type="button"
         onClick={() => onEdit(item)}
       >
-        Edit listing
+        ✏️ Edit listing
       </button>
       <button
-        className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 transition-all duration-200 hover:scale-[1.02] hover:border-emerald-300 hover:bg-emerald-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
         type="button"
         disabled={availabilityId === item.id}
         onClick={() => onToggleAvailability(item)}
@@ -566,15 +569,15 @@ function OwnerManagementActions({
         {availabilityId === item.id
           ? "Updating..."
           : item.available
-            ? "Mark unavailable"
-            : "Mark available"}
+            ? "⚠️ Mark unavailable"
+            : "✅ Mark available"}
       </button>
       <button
-        className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100"
+        className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition-all duration-200 hover:scale-[1.02] hover:bg-red-100 active:scale-[0.98]"
         type="button"
         onClick={() => onDelete(item.id)}
       >
-        Delete listing
+        🗑️ Delete listing
       </button>
     </>
   );

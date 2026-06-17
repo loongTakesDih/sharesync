@@ -33,21 +33,21 @@ export const activeBorrowingStatuses = [
 
 export const getStatusBadgeLabel = (status) =>
   ({
-    pending: "Pending",
-    approved: "Approved",
-    rejected: "Rejected",
-    withdrawn: "Withdrawn",
-    item_deleted: "Item No Longer Available",
-    pickup_scheduled: "Pickup Scheduled",
-    pickup_change_requested: "Pickup Change Requested",
-    pickup_confirmed: "Pickup Confirmed",
-    borrowed: "Borrowed",
-    return_pending: "Return Pending",
-    return_issue: "Return Issue",
-    completed: "Completed",
+    pending: "⏳ Pending",
+    approved: "✅ Approved",
+    rejected: "❌ Rejected",
+    withdrawn: "↩️ Withdrawn",
+    item_deleted: "🗑️ Item No Longer Available",
+    pickup_scheduled: "📍 Pickup Scheduled",
+    pickup_change_requested: "⚡ Pickup Change Requested",
+    pickup_confirmed: "🤲 Pickup Confirmed",
+    borrowed: "🤝 Borrowed",
+    return_pending: "🔁 Return Pending",
+    return_issue: "⚠️ Return Issue",
+    completed: "🎉 Completed",
   }[status] ||
   status ||
-  "Pending");
+  "⏳ Pending");
 
 export const getStatusBadgeClass = (status) =>
   ({

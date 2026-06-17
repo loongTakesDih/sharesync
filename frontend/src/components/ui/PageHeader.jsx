@@ -7,7 +7,7 @@ function PageHeader({
   title,
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+    <section className="animate-slide-up overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
       <div className="grid gap-6 bg-[linear-gradient(135deg,rgba(236,253,245,0.9),rgba(255,255,255,0.95)_52%,rgba(255,251,235,0.9))] px-5 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-7">
         <div className="min-w-0">
           {eyebrow && (

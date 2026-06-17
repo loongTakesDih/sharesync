@@ -16,7 +16,7 @@ function ItemCard({
   const hasFooterLeadingContent = showAvailability || Boolean(actions);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white/95 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
       <div
         className={`block w-full flex-1 text-left ${
           canOpenDetail ? "cursor-pointer" : ""
@@ -30,11 +30,11 @@ function ItemCard({
           }
         }}
       >
-        <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
           {item.imageBase64 && (
             <img
               alt={item.name}
-              className="absolute inset-0 h-full w-full object-contain"
+              className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
               src={item.imageBase64}
             />
           )}
@@ -104,7 +104,7 @@ function ItemCard({
                 : "inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-stone-200"
             }
           >
-            {item.available ? "Available" : "Unavailable"}
+            {item.available ? "✅ Available" : "⚠️ Unavailable"}
           </strong>
         )}
 
@@ -112,7 +112,7 @@ function ItemCard({
 
         {canOpenDetail && (
           <button
-            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
             type="button"
             onClick={() => onOpenDetail(item)}
           >

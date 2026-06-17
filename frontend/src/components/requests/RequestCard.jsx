@@ -17,11 +17,11 @@ import {
 } from "../../utils/trust";
 
 const acceptButtonClass =
-  "rounded-2xl bg-emerald-700 px-4 py-2 font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-700 px-4 py-2 text-center text-sm font-bold leading-5 text-white shadow-sm transition-all duration-200 hover:bg-emerald-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
 const dangerButtonClass =
-  "rounded-2xl border border-red-200 bg-red-50 px-4 py-2 font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-center text-sm font-bold leading-5 text-red-700 transition-all duration-200 hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
 const mutedButtonClass =
-  "rounded-2xl border border-stone-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 py-2 text-center text-sm font-bold leading-5 text-slate-700 shadow-sm transition-all duration-200 hover:border-emerald-300 hover:bg-emerald-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
 
 function RequestCard({
   actionId,
@@ -55,23 +55,25 @@ function RequestCard({
 
   return (
     <article
-      className={`flex flex-col gap-5 rounded-2xl border bg-white p-5 shadow-sm transition hover:border-emerald-100 hover:shadow-md md:flex-row md:items-start md:justify-between ${
+      className={`grid min-w-0 gap-5 rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md ${
         closedRequestStatuses.includes(request.status)
           ? "border-stone-200 opacity-80"
           : "border-stone-200"
       }`}
     >
       <div className="min-w-0">
-        <h3 className="text-xl font-black text-slate-950">{request.itemName}</h3>
+        <h3 className="break-words text-lg font-black leading-6 text-slate-950">
+          {request.itemName}
+        </h3>
         <Badge
-          className={`mt-3 ${getStatusBadgeClass(request.status)}`}
+          className={`mt-3 max-w-full whitespace-normal text-left leading-5 ${getStatusBadgeClass(request.status)}`}
         >
           {statusBadgeLabel}
         </Badge>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-600">
-          <span>{isIncoming ? "Borrower:" : "Owner:"}</span>
+        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-slate-600">
+          <span className="shrink-0">{isIncoming ? "Borrower:" : "Owner:"}</span>
           <button
-            className="font-bold text-emerald-800 underline-offset-4 hover:underline"
+            className="min-w-0 break-words text-left font-bold text-emerald-800 underline-offset-4 hover:underline"
             type="button"
             onClick={() =>
               onOpenUserProfile?.(relatedUserId, {
@@ -202,11 +204,11 @@ function RequestCard({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-3 md:items-end">
+      <div className="grid w-full gap-3">
         {request.status === "pending" &&
           isIncoming &&
           request.ownerId === user.uid && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <button
                 className={acceptButtonClass}
                 disabled={actionId === request.id}
@@ -276,7 +278,7 @@ function RequestCard({
           {request.status === "pickup_scheduled" &&
             !isIncoming &&
             request.borrowerId === user.uid && (
-              <div className="flex flex-wrap gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   className={acceptButtonClass}
                   disabled={actionId === request.id}

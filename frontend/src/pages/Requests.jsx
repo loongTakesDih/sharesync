@@ -520,7 +520,7 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
   return (
     <section className="grid gap-6">
       <PageHeader
-        eyebrow="Borrowing workflow"
+        eyebrow="🤝 Borrowing workflow"
         meta={
           <div className="grid w-full grid-cols-3 gap-2">
             <MiniStat label="Action" value={needsActionRequests.length} />
@@ -541,21 +541,21 @@ function Requests({ activeCommunity, activeCommunityId, user }) {
       <div className="grid gap-6 xl:grid-cols-3 xl:items-start">
         <RequestSection
           className="bg-emerald-50/50"
-          emptyMessage="No action needed."
+          emptyMessage="No urgent actions right now."
           loading={requestsLoading}
           renderRequestCard={renderRequestCard}
           requests={needsActionRequests}
           title="Needs Action"
         />
         <RequestSection
-          emptyMessage="No active borrowing records."
+          emptyMessage="No active borrowing records right now."
           loading={requestsLoading}
           renderRequestCard={renderRequestCard}
           requests={activeRequests}
           title="Active Borrowing"
         />
         <RequestSection
-          emptyMessage="No pending requests."
+          emptyMessage="No pending requests right now."
           loading={requestsLoading}
           renderRequestCard={renderRequestCard}
           requests={pendingRequests}

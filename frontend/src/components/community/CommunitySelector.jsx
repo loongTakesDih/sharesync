@@ -18,13 +18,13 @@ const initialDraft = {
 };
 
 const modeButtonClass =
-  "flex-1 rounded-xl px-3 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
+  "flex-1 rounded-xl px-3 py-2 text-sm font-black transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100";
 const activeModeButtonClass = `${modeButtonClass} bg-slate-900 text-white shadow-sm`;
 const inactiveModeButtonClass = `${modeButtonClass} bg-white text-slate-600 ring-1 ring-stone-200 hover:bg-emerald-50 hover:text-emerald-800`;
 const resultButtonClass =
-  "rounded-xl border border-stone-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50/50 disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-xl border border-stone-200 bg-white px-4 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
 const selectedResultButtonClass =
-  "rounded-xl border border-emerald-500 bg-emerald-50 px-4 py-3 text-left shadow-sm";
+  "rounded-xl border border-emerald-500 bg-emerald-50 px-4 py-3 text-left shadow-sm transition-all duration-200";
 
 function CommunitySelector({
   disabled = false,
@@ -67,7 +67,7 @@ function CommunitySelector({
 
       if (results.length === 0) {
         setMessage(
-          "No useful OpenStreetMap results found. You can create the community manually."
+          "No community found yet. Try searching a nearby residence or create one."
         );
       }
     } catch (error) {
@@ -191,7 +191,7 @@ function CommunitySelector({
   };
 
   return (
-    <div className="grid gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-3">
+    <div className="animate-fade-in grid gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-3">
       <div className="flex rounded-2xl bg-stone-100 p-1">
         <button
           className={mode === "search" ? activeModeButtonClass : inactiveModeButtonClass}
@@ -199,7 +199,7 @@ function CommunitySelector({
           disabled={disabled}
           onClick={() => setMode("search")}
         >
-          Find community
+          🏘️ Find community
         </button>
         <button
           className={mode === "manual" ? activeModeButtonClass : inactiveModeButtonClass}
@@ -207,7 +207,7 @@ function CommunitySelector({
           disabled={disabled}
           onClick={() => setMode("manual")}
         >
-          Create manually
+          ✨ Create manually
         </button>
       </div>
 
@@ -267,7 +267,7 @@ function SearchCommunityPanel({
   return (
     <div className="grid gap-4">
       <label className="grid gap-2 text-sm font-bold text-slate-700">
-        Search community
+        🏘️ Search community
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <input
             className={inputClass}
@@ -289,7 +289,7 @@ function SearchCommunityPanel({
 
       {(shareSyncLoading || hasSearchInput || hasShareSyncResults) && (
         <ExistingCommunityResults
-          emptyText="No ShareSync community found for this search."
+          emptyText="No community found yet. Try searching a nearby residence or create one."
           loading={shareSyncLoading}
           loadingText="Searching ShareSync communities..."
           onSelect={onSelectShareSync}
@@ -302,7 +302,7 @@ function SearchCommunityPanel({
         <ResultSection
           emptyText={
             searchedWithoutShareSyncResults
-              ? "No useful OpenStreetMap results found."
+              ? "No community found yet. Try searching a nearby residence or create one."
               : "No OpenStreetMap results shown yet."
           }
           label="Found via OpenStreetMap"
@@ -381,7 +381,7 @@ function ExistingCommunityResults({
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-black text-slate-900">
-            Matching existing communities
+            🏘️ Matching existing communities
           </p>
           <p className="text-xs font-semibold leading-5 text-slate-500">
             Pick one of these if it matches your home area.
@@ -484,7 +484,7 @@ function SelectedCommunityPreview({ selected }) {
   return (
     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
       <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
-        Selected community
+        🏘️ Selected community
       </p>
       <p className="mt-1 font-black text-emerald-950">{selected.name}</p>
       <p className="mt-1 font-semibold text-emerald-800">
