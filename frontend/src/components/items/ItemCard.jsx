@@ -1,19 +1,24 @@
-import { getItemCategoryLabel } from "../../utils/itemCategories";
+import { formatRelativeTime } from "../../utils/relativeTime";
 
 function ItemCard({
   actions,
   item,
   onOpenDetail,
   onOpenUserProfile,
+  onToggleSaved,
+  saved = false,
+  savingSaved = false,
   showAvailability = true,
   showDescription = false,
   user,
 }) {
   const isOwnItem = item.ownerId === user?.uid;
   const ownerLabel = item.ownerUsername || "Neighbor";
-  const categoryLabel = getItemCategoryLabel(item);
+  const categoryLabel = item.category || "Uncategorized";
   const canOpenDetail = Boolean(onOpenDetail);
   const hasFooterLeadingContent = showAvailability || Boolean(actions);
+  const availableAge = formatRelativeTime(item.availableSince || item.createdAt);
+  const canSave = Boolean(onToggleSaved) && !isOwnItem;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white/95 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
@@ -31,6 +36,32 @@ function ItemCard({
         }}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
+          <div className="absolute right-4 top-4 z-10">
+            {isOwnItem ? (
+              <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-emerald-800 shadow-sm ring-1 ring-emerald-100 backdrop-blur">
+                Yours
+              </span>
+            ) : (
+              canSave && (
+                <button
+                  aria-label={saved ? "Remove from saved items" : "Save item"}
+                  className={
+                    saved
+                      ? "grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-lg font-black text-rose-600 shadow-sm ring-1 ring-rose-100 backdrop-blur transition hover:scale-105"
+                      : "grid h-10 w-10 place-items-center rounded-full bg-white/95 text-lg font-black text-slate-500 shadow-sm ring-1 ring-white/70 backdrop-blur transition hover:scale-105 hover:text-rose-600"
+                  }
+                  disabled={savingSaved}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleSaved(item);
+                  }}
+                >
+                  {saved ? "♥" : "♡"}
+                </button>
+              )
+            )}
+          </div>
           {item.imageBase64 && (
             <img
               alt={item.name}
@@ -47,11 +78,6 @@ function ItemCard({
                 </div>
               )}
             </div>
-            {isOwnItem && (
-              <span className="relative z-10 m-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
-                Yours
-              </span>
-            )}
           </div>
         </div>
 
@@ -60,6 +86,9 @@ function ItemCard({
             <h3 className="line-clamp-1 text-lg font-black text-slate-950">
               {item.name}
             </h3>
+            <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">
+              {availableAge}
+            </p>
             {showDescription && (
               <p className="mt-2 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-600">
                 {item.description || "No description provided."}
@@ -70,9 +99,6 @@ function ItemCard({
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-full bg-amber-50 px-3 py-1 font-bold text-amber-800 ring-1 ring-amber-100">
               {categoryLabel}
-            </span>
-            <span className="rounded-full bg-stone-100 px-3 py-1 font-bold text-slate-600">
-              {item.community}
             </span>
             <button
               className="rounded-full bg-emerald-50 px-3 py-1 font-bold text-emerald-800 transition hover:bg-emerald-100"
@@ -91,35 +117,23 @@ function ItemCard({
         </div>
       </div>
 
-      <div
-        className={`flex flex-wrap items-center gap-3 border-t border-stone-100 px-5 py-4 ${
-          hasFooterLeadingContent ? "justify-between" : "justify-end"
-        }`}
-      >
-        {showAvailability && (
-          <strong
-            className={
-              item.available
-                ? "inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-200"
-                : "inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-stone-200"
-            }
-          >
-            {item.available ? "✅ Available" : "⚠️ Unavailable"}
-          </strong>
-        )}
+      {hasFooterLeadingContent && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
+          {showAvailability && (
+            <strong
+              className={
+                item.available
+                  ? "inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-200"
+                  : "inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-stone-200"
+              }
+            >
+              {item.available ? "Available" : "Unavailable"}
+            </strong>
+          )}
 
-        {actions}
-
-        {canOpenDetail && (
-          <button
-            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
-            type="button"
-            onClick={() => onOpenDetail(item)}
-          >
-            View Details
-          </button>
-        )}
-      </div>
+          {actions}
+        </div>
+      )}
     </article>
   );
 }

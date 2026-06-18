@@ -28,6 +28,7 @@ function RequestCard({
   direction,
   formatCreatedAt,
   getPastTimestamp,
+  hasUnreadChat = false,
   onAccept,
   onConfirmHandover,
   onConfirmPickup,
@@ -59,10 +60,17 @@ function RequestCard({
       className={`grid min-w-0 gap-5 rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md ${
         closedRequestStatuses.includes(request.status)
           ? "border-stone-200 opacity-80"
+          : hasUnreadChat
+            ? "border-emerald-300 ring-2 ring-emerald-100"
           : "border-stone-200"
       }`}
     >
       <div className="min-w-0">
+        {hasUnreadChat && (
+          <span className="mb-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-200">
+            New chat {"\u{1F4AC}"}
+          </span>
+        )}
         <h3 className="break-words text-lg font-black leading-6 text-slate-950">
           {request.itemName}
         </h3>

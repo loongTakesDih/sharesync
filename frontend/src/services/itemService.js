@@ -59,12 +59,16 @@ export const createItem = ({
     community: activeCommunityObject.name || activeCommunity,
     preferredPickupLocation: preferredPickupLocation.trim(),
     available: true,
+    availableSince: serverTimestamp(),
     createdAt: serverTimestamp(),
   });
 };
 
 export const updateItem = (itemId, updates) =>
   updateDoc(doc(db, "items", itemId), updates);
+
+export const getAvailableSinceReset = ({ nextAvailable, previousAvailable }) =>
+  !previousAvailable && nextAvailable ? { availableSince: serverTimestamp() } : {};
 
 export const deleteItem = async ({
   activeCommunity,
@@ -104,4 +108,7 @@ export const deleteItem = async ({
 };
 
 export const toggleItemAvailability = (itemId, available) =>
-  updateItem(itemId, { available });
+  updateItem(itemId, {
+    available,
+    ...(available ? { availableSince: serverTimestamp() } : {}),
+  });

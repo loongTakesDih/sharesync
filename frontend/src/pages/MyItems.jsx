@@ -11,6 +11,7 @@ import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
 import {
   deleteItem as deleteItemDocument,
+  getAvailableSinceReset,
   toggleItemAvailability,
   updateItem,
 } from "../services/itemService";
@@ -37,6 +38,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
     useState("");
   const [editImageBase64, setEditImageBase64] = useState("");
   const [editAvailable, setEditAvailable] = useState(true);
+  const [editWasAvailable, setEditWasAvailable] = useState(true);
   const [availabilityId, setAvailabilityId] = useState("");
   const [saving, setSaving] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -91,6 +93,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
     setEditPreferredPickupLocation(item.preferredPickupLocation || "");
     setEditImageBase64(item.imageBase64 || "");
     setEditAvailable(item.available);
+    setEditWasAvailable(item.available);
   };
 
   const cancelEditing = () => {
@@ -102,6 +105,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
     setEditPreferredPickupLocation("");
     setEditImageBase64("");
     setEditAvailable(true);
+    setEditWasAvailable(true);
     setCropImage(null);
   };
 
@@ -129,6 +133,10 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
         preferredPickupLocation: editPreferredPickupLocation.trim(),
         imageBase64: editImageBase64,
         available: editAvailable,
+        ...getAvailableSinceReset({
+          nextAvailable: editAvailable,
+          previousAvailable: editWasAvailable,
+        }),
       });
 
       cancelEditing();
@@ -267,7 +275,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
             key={item.id}
             onOpenDetail={setSelectedItem}
             onOpenUserProfile={openUserProfile}
-            showAvailability={false}
+            showAvailability
             user={user}
           />
         ))}

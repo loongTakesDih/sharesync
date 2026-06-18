@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "./components/layout/AppHeader";
 import { useAuthProfile } from "./hooks/useAuthProfile";
+import { useRequests } from "./hooks/useRequests";
 import { logoutUser } from "./services/authService";
 import "./App.css";
-import Browse from "./pages/Browse";
 import CompleteProfile from "./pages/CompleteProfile";
 import ForgotPassword from "./pages/ForgotPassword";
 import History from "./pages/History";
@@ -13,12 +13,14 @@ import MyItems from "./pages/MyItems";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Requests from "./pages/Requests";
+import SavedItems from "./pages/SavedItems";
 
 const pagePaths = {
   home: "/home",
   browse: "/browse",
   myItems: "/my-items",
   requests: "/requests",
+  savedItems: "/saved-items",
   history: "/history",
   profile: "/profile",
 };
@@ -26,31 +28,31 @@ const pagePaths = {
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 const legacyPrivateRoutes = {
   "/dashboard": pagePaths.home,
-  "/items": pagePaths.browse,
+  "/items": pagePaths.home,
+  "/browse": pagePaths.home,
 };
 const privateRoutes = Object.values(pagePaths);
 
 const getPageFromPath = (pathname) => {
   const canonicalPath = legacyPrivateRoutes[pathname] || pathname;
-  const pageEntry = Object.entries(pagePaths).find(([, path]) => path === pathname);
-
-  if (pageEntry) {
-    return pageEntry[0];
-  }
-
-  const legacyPageEntry = Object.entries(pagePaths).find(
+  const pageEntry = Object.entries(pagePaths).find(
     ([, path]) => path === canonicalPath
   );
 
-  return legacyPageEntry ? legacyPageEntry[0] : "home";
+  return pageEntry ? pageEntry[0] : "home";
 };
 
 function App() {
   const [pathname, setPathname] = useState(window.location.pathname);
   const [marketplaceSearch, setMarketplaceSearch] = useState("");
   const [listIntent, setListIntent] = useState(0);
+  const [initialChatRequestId, setInitialChatRequestId] = useState("");
 
   const navigate = useCallback((nextPath) => {
+    if (nextPath !== pagePaths.home) {
+      setListIntent(0);
+    }
+
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, "", nextPath);
     }
@@ -69,6 +71,23 @@ function App() {
     user,
     userProfile,
   } = useAuthProfile(navigate);
+  const { incomingRequests, outgoingRequests } = useRequests({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
+  const unreadChatRequestIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          [...incomingRequests, ...outgoingRequests]
+            .filter((request) => request.chatUnreadFor?.includes(user?.uid))
+            .map((request) => request.id)
+        ),
+      ],
+    [incomingRequests, outgoingRequests, user?.uid]
+  );
+  const unreadChatCount = unreadChatRequestIds.length;
 
   useEffect(() => {
     const handlePopState = () => {
@@ -133,34 +152,22 @@ function App() {
   const activePage = getPageFromPath(pathname);
 
   const renderPage = () => {
-    if (activePage === "browse") {
-      return (
-        <Browse
-          activeCommunity={activeCommunity}
-          activeCommunityId={activeCommunityId}
-          activeCommunityObject={activeCommunityObject}
-          listIntent={listIntent}
-          onSearchChange={setMarketplaceSearch}
-          searchTerm={marketplaceSearch}
-          user={user}
-          userProfile={userProfile}
-        />
-      );
-    }
-
     if (activePage === "home") {
       return (
         <Home
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}
           activeCommunityObject={activeCommunityObject}
+          listIntent={listIntent}
           navigate={navigate}
           onCommunityChange={changeActiveCommunity}
           onListItem={() => {
-            navigate(pagePaths.browse);
+            navigate(pagePaths.home);
             setListIntent((current) => current + 1);
           }}
+          onSearchChange={setMarketplaceSearch}
           pagePaths={pagePaths}
+          searchTerm={marketplaceSearch}
           user={user}
           userProfile={userProfile}
         />
@@ -174,7 +181,7 @@ function App() {
           activeCommunityId={activeCommunityId}
           activeCommunityObject={activeCommunityObject}
           onListItem={() => {
-            navigate(pagePaths.browse);
+            navigate(pagePaths.home);
             setListIntent((current) => current + 1);
           }}
           user={user}
@@ -189,6 +196,8 @@ function App() {
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}
           activeCommunityObject={activeCommunityObject}
+          initialChatRequestId={initialChatRequestId}
+          onInitialChatHandled={() => setInitialChatRequestId("")}
           user={user}
           userProfile={userProfile}
         />
@@ -201,6 +210,18 @@ function App() {
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}
           user={user}
+        />
+      );
+    }
+
+    if (activePage === "savedItems") {
+      return (
+        <SavedItems
+          activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
+          activeCommunityObject={activeCommunityObject}
+          user={user}
+          userProfile={userProfile}
         />
       );
     }
@@ -263,19 +284,22 @@ function App() {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 h-72 bg-[linear-gradient(315deg,rgba(254,243,199,0.45),rgba(255,255,255,0)_62%)]" />
       <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 lg:px-8">
         <AppHeader
-          activeCommunity={activeCommunity}
-          activeCommunityId={activeCommunityId}
           activePage={activePage}
           navigate={navigate}
-          onCommunityChange={changeActiveCommunity}
-          onListItem={() => {
-            navigate(pagePaths.browse);
-            setListIntent((current) => current + 1);
+          onOpenUnreadChats={() => {
+            if (unreadChatRequestIds.length === 1) {
+              setInitialChatRequestId(unreadChatRequestIds[0]);
+            } else {
+              setInitialChatRequestId("");
+            }
+
+            navigate(pagePaths.requests);
           }}
           onLogout={logout}
           onSearchChange={setMarketplaceSearch}
           pagePaths={pagePaths}
           searchTerm={marketplaceSearch}
+          unreadChatCount={unreadChatCount}
           userProfile={userProfile}
         />
 

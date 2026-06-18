@@ -10,8 +10,10 @@ import SectionCard from "../ui/SectionCard";
 import { usePublicProfileModal } from "../../hooks/usePublicProfileModal";
 import { useItems } from "../../hooks/useItems";
 import { useRequests } from "../../hooks/useRequests";
+import { useSavedItems } from "../../hooks/useSavedItems";
 import { createItem } from "../../services/itemService";
 import { createRequest } from "../../services/requestService";
+import { toggleSavedItem } from "../../services/savedItemService";
 import { cropImageToBase64, readImageFileForCrop } from "../../utils/imageUtils";
 import {
   getItemCategoryLabel,
@@ -24,6 +26,9 @@ function MarketplaceView({
   activeCommunity,
   activeCommunityId,
   activeCommunityObject,
+  availableOnly = false,
+  borrowableOnly = false,
+  embedded = false,
   listIntent = 0,
   onSearchChange,
   searchTerm = "",
@@ -44,6 +49,7 @@ function MarketplaceView({
   const [saving, setSaving] = useState(false);
   const [requestingItemId, setRequestingItemId] = useState("");
   const [requestedItemIds, setRequestedItemIds] = useState([]);
+  const [savingSavedItemId, setSavingSavedItemId] = useState("");
   const [message, setMessage] = useState("");
   const [showListForm, setShowListForm] = useState(listIntent > 0);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -64,6 +70,11 @@ function MarketplaceView({
     activeCommunityId,
     user,
   });
+  const { savedItemIds } = useSavedItems({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
 
   const pendingRequestedItemIds = outgoingRequests
     .filter((request) => !closedRequestStatuses.includes(request.status))
@@ -72,10 +83,26 @@ function MarketplaceView({
     ...new Set([...pendingRequestedItemIds, ...requestedItemIds]),
   ];
 
+  const marketplaceItems = useMemo(
+    () =>
+      items.filter((item) => {
+        if (availableOnly && !item.available) {
+          return false;
+        }
+
+        if (borrowableOnly && item.ownerId === user?.uid) {
+          return false;
+        }
+
+        return true;
+      }),
+    [availableOnly, borrowableOnly, items, user?.uid]
+  );
+
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return items.filter((item) => {
+    return marketplaceItems.filter((item) => {
       const matchesSearch =
         !normalizedSearch ||
         [item.name, item.description, item.ownerUsername, item.community]
@@ -86,7 +113,7 @@ function MarketplaceView({
 
       return matchesSearch && matchesCategory;
     });
-  }, [activeCategory, items, searchTerm]);
+  }, [activeCategory, marketplaceItems, searchTerm]);
 
   const addItem = async (event) => {
     event.preventDefault();
@@ -257,6 +284,188 @@ function MarketplaceView({
     ? allRequestedItemIds.includes(selectedItem.id)
     : false;
 
+  const handleToggleSaved = async (item) => {
+    setSavingSavedItemId(item.id);
+    setMessage("");
+
+    try {
+      await toggleSavedItem({
+        activeCommunity,
+        activeCommunityId,
+        item,
+        saved: savedItemIds.has(item.id),
+        user,
+      });
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSavingSavedItemId("");
+    }
+  };
+
+  if (embedded) {
+    return (
+      <section className="grid gap-5">
+        {message && (
+          <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-900">
+            {message}
+          </p>
+        )}
+
+        <SectionCard
+          className="overflow-hidden"
+          subtitle={`${filteredItems.length} of ${marketplaceItems.length} available listings shown in ${activeCommunity}. Use the top search bar to narrow results.`}
+          title="Available to Borrow"
+        >
+          <div className="grid gap-4">
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                  Showing now
+                </p>
+                <p className="mt-1 text-2xl font-black text-emerald-950">
+                  {filteredItems.length}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-emerald-800">
+                  {activeCategory === "All"
+                    ? "All categories"
+                    : `${activeCategory} listings`}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Browse by category
+                </p>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  <CategoryButton
+                    active={activeCategory === "All"}
+                    label="All"
+                    onClick={() => setActiveCategory("All")}
+                  />
+                  {itemCategories.map((itemCategory) => (
+                    <CategoryButton
+                      active={activeCategory === itemCategory}
+                      key={itemCategory}
+                      label={getItemCategoryLabel({ category: itemCategory })}
+                      onClick={() => setActiveCategory(itemCategory)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {showListForm && (
+          <SectionCard
+            actions={
+              <button
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50"
+                type="button"
+                onClick={() => setShowListForm(false)}
+              >
+                Cancel
+              </button>
+            }
+            subtitle={`Create a listing for ${activeCommunity}.`}
+            title="New Listing"
+          >
+            <ItemForm
+              category={category}
+              condition={condition}
+              description={description}
+              imageBase64={imageBase64}
+              imageProcessing={imageProcessing}
+              name={name}
+              onCategoryChange={setCategory}
+              onConditionChange={setCondition}
+              onDescriptionChange={setDescription}
+              onImageChange={handleImageChange}
+              onImageRemove={() => setImageBase64("")}
+              onNameChange={setName}
+              onPreferredPickupLocationChange={setPreferredPickupLocation}
+              onSubmit={addItem}
+              preferredPickupLocation={preferredPickupLocation}
+              saving={saving}
+            />
+          </SectionCard>
+        )}
+
+        <section className="min-w-0">
+          {loading && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <div
+                  className="h-80 animate-pulse rounded-2xl border border-stone-200 bg-white shadow-sm"
+                  key={item}
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && filteredItems.length === 0 && (
+            <EmptyState>
+              No matching available items found. Try another category or search
+              term.
+            </EmptyState>
+          )}
+
+          {!loading && filteredItems.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredItems.map((item) => (
+                <ItemCard
+                  item={item}
+                  key={item.id}
+                  onOpenDetail={setSelectedItem}
+                  onOpenUserProfile={openUserProfile}
+                  onToggleSaved={handleToggleSaved}
+                  saved={savedItemIds.has(item.id)}
+                  savingSaved={savingSavedItemId === item.id}
+                  showAvailability={false}
+                  user={user}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <ItemDetailModal
+          item={selectedItem}
+          items={items}
+          onClose={() => setSelectedItem(null)}
+          onOpenDetail={setSelectedItem}
+          onOpenUserProfile={openUserProfile}
+          onRequest={requestItem}
+          requested={selectedItemIsRequested}
+          requesting={selectedItem?.id === requestingItemId}
+          user={user}
+        />
+        <PublicProfileModal
+          loading={profileLoading}
+          onClose={closeUserProfile}
+          onOpenItemDetail={(item) => {
+            closeUserProfile();
+            setSelectedItem(item);
+          }}
+          profile={profile}
+        />
+        <ImageCropModal
+          crop={cropImage}
+          focalX={cropFocalX}
+          focalY={cropFocalY}
+          onApply={applyImageCrop}
+          onCancel={() => setCropImage(null)}
+          onFocalXChange={setCropFocalX}
+          onFocalYChange={setCropFocalY}
+          onZoomChange={setCropZoom}
+          processing={imageProcessing}
+          zoom={cropZoom}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="grid gap-6">
       <PageHeader
@@ -356,7 +565,7 @@ function MarketplaceView({
       <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <SectionCard
-            subtitle={`${filteredItems.length} of ${items.length} listings shown.`}
+            subtitle={`${filteredItems.length} of ${marketplaceItems.length} listings shown.`}
             title="🔍 Filters"
           >
             <div className="grid gap-5">
@@ -430,6 +639,9 @@ function MarketplaceView({
                   key={item.id}
                   onOpenDetail={setSelectedItem}
                   onOpenUserProfile={openUserProfile}
+                  onToggleSaved={handleToggleSaved}
+                  saved={savedItemIds.has(item.id)}
+                  savingSaved={savingSavedItemId === item.id}
                   user={user}
                 />
               ))}

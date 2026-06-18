@@ -1,5 +1,7 @@
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -131,12 +133,53 @@ export const sendRequestMessage = async ({
     currentUser.email ||
     "User";
 
-  await addDoc(collection(db, "requests", freshRequest.id, "messages"), {
+  const recipientUid =
+    currentUser.uid === freshRequest.ownerId
+      ? freshRequest.borrowerId
+      : freshRequest.ownerId;
+
+  if (!recipientUid) {
+    throw new Error("Could not find the chat recipient.");
+  }
+
+  const batch = writeBatch(db);
+  const messageRef = doc(collection(db, "requests", freshRequest.id, "messages"));
+  const requestRef = doc(db, "requests", freshRequest.id);
+
+  batch.set(messageRef, {
     text: trimmedText,
     senderId: currentUser.uid,
     senderUsername,
     senderRole,
     createdAt: serverTimestamp(),
+  });
+
+  batch.update(requestRef, {
+    chatLastMessageAt: serverTimestamp(),
+    chatLastMessageText: trimmedText.slice(0, 120),
+    chatLastMessageSenderId: currentUser.uid,
+    chatUnreadFor: arrayUnion(recipientUid),
+  });
+
+  await batch.commit();
+};
+
+export const markRequestChatRead = async ({ requestId, userId }) => {
+  if (!requestId || !userId) {
+    return;
+  }
+
+  const { requestRef, request: freshRequest } = await getFreshRequest(requestId);
+
+  if (
+    freshRequest.ownerId !== userId &&
+    freshRequest.borrowerId !== userId
+  ) {
+    throw new Error("You can only read chats on your own requests.");
+  }
+
+  await updateDoc(requestRef, {
+    chatUnreadFor: arrayRemove(userId),
   });
 };
 
@@ -541,6 +584,7 @@ export const confirmReturn = async ({
 
   batch.update(itemRef, {
     available: true,
+    availableSince: serverTimestamp(),
   });
 
   await batch.commit();
@@ -614,6 +658,7 @@ export const inspectReturn = async ({
 
     batch.update(itemRef, {
       available: true,
+      availableSince: serverTimestamp(),
     });
   } else {
     const issueType = returnIssueConditions.includes(condition)
@@ -725,6 +770,7 @@ export const resolveReturnIssue = async ({
 
   batch.update(itemRef, {
     available: Boolean(makeItemAvailable),
+    ...(makeItemAvailable ? { availableSince: serverTimestamp() } : {}),
   });
 
   await batch.commit();

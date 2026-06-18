@@ -1,16 +1,14 @@
 import { useState } from "react";
 
 function AppHeader({
-  activeCommunity,
-  activeCommunityId,
   activePage,
   navigate,
-  onCommunityChange,
-  onListItem,
+  onOpenUnreadChats,
   onLogout,
   onSearchChange,
   pagePaths,
   searchTerm,
+  unreadChatCount = 0,
   userProfile,
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -24,12 +22,10 @@ function AppHeader({
   const profileLinks = [
     ["myItems", "My Items"],
     ["requests", "Requests"],
+    ["savedItems", "Saved Items"],
     ["history", "History"],
     ["profile", "Profile"],
   ];
-  const hasStructuredCommunities = userProfile.communities.some(
-    (community) => community.communityId
-  );
 
   return (
     <header className="sticky top-0 z-20 -mx-4 border-b border-stone-200/80 bg-[#f8f6f1]/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -52,20 +48,11 @@ function AppHeader({
               </span>
             </span>
           </button>
-
-          <button
-            className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98] lg:hidden"
-            type="button"
-            onClick={onListItem}
-          >
-            📦 List
-          </button>
         </div>
 
         <nav className="flex gap-2 overflow-x-auto lg:ml-4 lg:shrink-0">
           {[
             ["home", "Home"],
-            ["browse", "Browse"],
           ].map(([pageKey, label]) => (
             <button
               className={
@@ -92,8 +79,8 @@ function AppHeader({
               value={searchTerm}
               onChange={(event) => {
                 onSearchChange(event.target.value);
-                if (activePage !== "browse") {
-                  navigate(pagePaths.browse);
+                if (activePage !== "home") {
+                  navigate(pagePaths.home);
                 }
               }}
             />
@@ -101,32 +88,24 @@ function AppHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <select
-            className="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 sm:flex-none"
-            value={activeCommunityId}
-            onChange={(event) => onCommunityChange(event.target.value)}
-            aria-label="Active community"
-            disabled={!hasStructuredCommunities}
-          >
-            {userProfile.communities.map((community) => (
-              <option
-                key={community.communityId || community.name}
-                value={community.communityId}
-              >
-                {community.name}
-              </option>
-            ))}
-            {!hasStructuredCommunities && (
-              <option value="">{activeCommunity || "Select community"}</option>
-            )}
-          </select>
-
           <button
-            className="hidden rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98] lg:inline-flex"
+            className="relative grid h-12 w-12 place-items-center rounded-2xl border border-stone-200 bg-white text-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98]"
             type="button"
-            onClick={onListItem}
+            aria-label={
+              unreadChatCount > 0
+                ? `${unreadChatCount} unread request chat${
+                    unreadChatCount === 1 ? "" : "s"
+                  }`
+                : "Open request chats"
+            }
+            onClick={onOpenUnreadChats}
           >
-            📦 List Item
+            <span aria-hidden="true">{"\u{1F4AC}"}</span>
+            {unreadChatCount > 0 && (
+              <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1.5 text-xs font-black text-white ring-2 ring-[#f8f6f1]">
+                {unreadChatCount > 9 ? "9+" : unreadChatCount}
+              </span>
+            )}
           </button>
 
           <div className="relative">

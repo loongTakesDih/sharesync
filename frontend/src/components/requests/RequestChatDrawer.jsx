@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  markRequestChatRead,
   sendRequestMessage,
   subscribeToRequestMessages,
 } from "../../services/requestService";
@@ -20,6 +21,8 @@ function RequestChatDrawer({ onClose, request, user, userProfile }) {
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
   const listRef = useRef(null);
+  const requestId = request?.id || "";
+  const userId = user?.uid || "";
 
   const isClosed = request
     ? closedRequestStatuses.includes(request.status)
@@ -34,38 +37,41 @@ function RequestChatDrawer({ onClose, request, user, userProfile }) {
       : getOwnerLabel(request)
     : "";
   const messages = useMemo(
-    () => (messageState.requestId === request?.id ? messageState.messages : []),
-    [messageState.messages, messageState.requestId, request?.id]
+    () => (messageState.requestId === requestId ? messageState.messages : []),
+    [messageState.messages, messageState.requestId, requestId]
   );
-  const loading = Boolean(request?.id && messageState.requestId !== request.id);
-  const loadError =
-    messageState.requestId === request?.id ? messageState.error : "";
+  const loading = Boolean(requestId && messageState.requestId !== requestId);
+  const loadError = messageState.requestId === requestId ? messageState.error : "";
 
   useEffect(() => {
-    if (!request?.id) {
+    if (!requestId) {
       return undefined;
     }
 
+    markRequestChatRead({ requestId, userId }).catch((error) => {
+      console.error("Could not mark chat as read:", error);
+    });
+
     const unsubscribe = subscribeToRequestMessages(
-      request.id,
+      requestId,
       (nextMessages) => {
         setMessageState({
           error: "",
           messages: nextMessages,
-          requestId: request.id,
+          requestId,
         });
       },
       (snapshotError) => {
         setMessageState({
           error: snapshotError.message || "Could not load chat messages.",
           messages: [],
-          requestId: request.id,
+          requestId,
         });
       }
     );
 
     return () => unsubscribe();
-  }, [request?.id]);
+  }, [requestId, userId]);
 
   useEffect(() => {
     const list = listRef.current;

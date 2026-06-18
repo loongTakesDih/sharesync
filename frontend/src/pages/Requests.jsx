@@ -29,7 +29,14 @@ import {
   pendingBorrowerRequestStatuses,
 } from "../utils/requestStatus";
 
-function Requests({ activeCommunity, activeCommunityId, user, userProfile }) {
+function Requests({
+  activeCommunity,
+  activeCommunityId,
+  initialChatRequestId = "",
+  onInitialChatHandled,
+  user,
+  userProfile,
+}) {
   const [actionId, setActionId] = useState("");
   const [message, setMessage] = useState("");
   const [pickupModal, setPickupModal] = useState(null);
@@ -490,6 +497,26 @@ function Requests({ activeCommunity, activeCommunityId, user, userProfile }) {
         request.borrowerId === user.uid
     )
     .map((request) => ({ direction: "outgoing", request }));
+  const allRequestRows = [
+    ...needsActionRequests,
+    ...activeRequests,
+    ...pendingRequests,
+  ];
+  const initialChatRequest = initialChatRequestId
+    ? allRequestRows.find(({ request }) => request.id === initialChatRequestId)
+        ?.request || null
+    : null;
+  const activeChatRequest = chatRequest || initialChatRequest;
+
+  const openChat = (request) => {
+    onInitialChatHandled?.();
+    setChatRequest(request);
+  };
+
+  const closeChat = () => {
+    setChatRequest(null);
+    onInitialChatHandled?.();
+  };
 
   const renderRequestCard = ({ direction, request }) => (
     <RequestCard
@@ -497,12 +524,13 @@ function Requests({ activeCommunity, activeCommunityId, user, userProfile }) {
       direction={direction}
       formatCreatedAt={formatCreatedAt}
       getPastTimestamp={() => ""}
+      hasUnreadChat={request.chatUnreadFor?.includes(user.uid)}
       key={`${direction}-${request.id}`}
       onAccept={acceptRequest}
       onConfirmHandover={confirmHandover}
       onConfirmPickup={confirmPickup}
       onEditPickup={openPickupEditor}
-      onOpenChat={setChatRequest}
+      onOpenChat={openChat}
       onInspectReturn={openInspectionModal}
       onMarkReturned={markReturned}
       onOpenUserProfile={openUserProfile}
@@ -604,9 +632,9 @@ function Requests({ activeCommunity, activeCommunityId, user, userProfile }) {
         saving={returnSaving}
       />
       <RequestChatDrawer
-        key={chatRequest?.id || "request-chat"}
-        onClose={() => setChatRequest(null)}
-        request={chatRequest}
+        key={activeChatRequest?.id || "request-chat"}
+        onClose={closeChat}
+        request={activeChatRequest}
         user={user}
         userProfile={userProfile}
       />
