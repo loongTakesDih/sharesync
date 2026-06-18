@@ -77,8 +77,8 @@ function ReturnInspectionModal({
 
         {adjustment && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-100">
-            Trust rating change: {adjustment.ratingDelta > 0 ? "+" : ""}
-            {adjustment.ratingDelta.toFixed(1)}
+            Trust rating will be recalculated from the borrower's full return
+            history after this outcome is saved.
           </p>
         )}
 

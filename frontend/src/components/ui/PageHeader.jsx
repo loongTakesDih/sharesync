@@ -7,8 +7,8 @@ function PageHeader({
   title,
 }) {
   return (
-    <section className="animate-slide-up overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-      <div className="grid gap-6 bg-[linear-gradient(135deg,rgba(236,253,245,0.9),rgba(255,255,255,0.95)_52%,rgba(255,251,235,0.9))] px-5 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-7">
+    <section className="sharesync-card-glow animate-slide-up overflow-hidden rounded-2xl border border-white/70 bg-white/90 backdrop-blur">
+      <div className="grid gap-6 bg-[linear-gradient(135deg,rgba(236,253,245,0.92),rgba(255,255,255,0.92)_48%,rgba(255,247,237,0.92))] px-5 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-7">
         <div className="min-w-0">
           {eyebrow && (
             <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
@@ -19,7 +19,7 @@ function PageHeader({
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
+            <p className="mt-3 max-w-3xl text-base font-medium leading-7 text-slate-600">
               {subtitle}
             </p>
           )}

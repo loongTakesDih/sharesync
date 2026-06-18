@@ -313,13 +313,13 @@ function MarketplaceView({
         )}
 
         <SectionCard
-          className="overflow-hidden"
+          className="overflow-visible"
           subtitle={`${filteredItems.length} of ${marketplaceItems.length} available listings shown in ${activeCommunity}. Use the top search bar to narrow results.`}
-          title="Available to Borrow"
+          title={`${"\u{1F331}"} Available to Borrow`}
         >
           <div className="grid gap-4">
             <div className="grid gap-3 xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-3 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
                   Showing now
                 </p>
@@ -333,14 +333,14 @@ function MarketplaceView({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+              <div className="rounded-2xl border border-white/70 bg-gradient-to-br from-white to-amber-50/60 px-4 py-3 shadow-sm">
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
                   Browse by category
                 </p>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-1.5">
                   <CategoryButton
                     active={activeCategory === "All"}
-                    label="All"
+                    label={`${"\u{2728}"} All`}
                     onClick={() => setActiveCategory("All")}
                   />
                   {itemCategories.map((itemCategory) => (
@@ -397,7 +397,7 @@ function MarketplaceView({
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {[1, 2, 3, 4, 5, 6].map((item) => (
                 <div
-                  className="h-80 animate-pulse rounded-2xl border border-stone-200 bg-white shadow-sm"
+                  className="h-80 animate-pulse rounded-2xl border border-white/70 bg-white/80 shadow-sm"
                   key={item}
                 />
               ))}
@@ -406,8 +406,7 @@ function MarketplaceView({
 
           {!loading && filteredItems.length === 0 && (
             <EmptyState>
-              No matching available items found. Try another category or search
-              term.
+              No items found {"\u{1F4ED}"} Try another search or category.
             </EmptyState>
           )}
 
@@ -506,7 +505,7 @@ function MarketplaceView({
           <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:max-w-xl">
             <CategoryButton
               active={activeCategory === "All"}
-              label="All"
+              label={`${"\u{2728}"} All`}
               onClick={() => setActiveCategory("All")}
             />
             {itemCategories.map((itemCategory) => (
@@ -584,7 +583,7 @@ function MarketplaceView({
                 <div className="mt-3 flex flex-wrap gap-2 lg:grid">
                   <CategoryButton
                     active={activeCategory === "All"}
-                    label="All"
+                    label={`${"\u{2728}"} All`}
                     onClick={() => setActiveCategory("All")}
                   />
                   {itemCategories.map((itemCategory) => (
@@ -618,7 +617,7 @@ function MarketplaceView({
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {[1, 2, 3, 4].map((item) => (
                 <div
-                  className="h-80 animate-pulse rounded-2xl border border-stone-200 bg-white shadow-sm"
+                  className="h-80 animate-pulse rounded-2xl border border-white/70 bg-white/80 shadow-sm"
                   key={item}
                 />
               ))}
@@ -627,7 +626,7 @@ function MarketplaceView({
 
           {!loading && filteredItems.length === 0 && (
             <EmptyState>
-              No matching items found. Try another category or search term.
+              No items found {"\u{1F4ED}"} Try another search or category.
             </EmptyState>
           )}
 
@@ -691,8 +690,8 @@ function CategoryButton({ active, label, onClick }) {
     <button
       className={
         active
-          ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-          : "whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all duration-200 hover:scale-[1.02] hover:border-emerald-300 hover:bg-emerald-50 active:scale-[0.98]"
+          ? "whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-black text-white shadow-md shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-[0.98]"
+          : "whitespace-nowrap rounded-full border border-white/70 bg-white/85 px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900 hover:shadow-md active:scale-[0.98]"
       }
       type="button"
       onClick={onClick}

@@ -6,7 +6,7 @@ import { fetchUserProfile } from "../services/userService";
 import { inputClass, linkButtonClass, primaryButtonClass } from "../utils/styles";
 
 const secondaryButtonClass =
-  "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full rounded-2xl border border-white/70 bg-white/90 px-4 py-3 font-black text-slate-700 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100";
 
 function Login({ navigate }) {
   const [email, setEmail] = useState("");

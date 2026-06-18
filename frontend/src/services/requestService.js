@@ -22,10 +22,8 @@ import {
 } from "../utils/returnInspection";
 import { closedRequestStatuses } from "../utils/requestStatus";
 import {
-  clampRating,
+  calculateAggregateTrustRating,
   defaultTrustStats,
-  getTrustRating,
-  roundRatingToHalf,
 } from "../utils/trust";
 
 const getActiveCommunityName = ({ activeCommunity, activeCommunityObject }) =>
@@ -688,10 +686,6 @@ export const inspectReturn = async ({
     const borrowerProfile = borrowerSnapshot.exists()
       ? borrowerSnapshot.data()
       : {};
-    const currentRating = getTrustRating(borrowerProfile);
-    const nextRating = clampRating(
-      roundRatingToHalf(currentRating + adjustment.ratingDelta)
-    );
     const currentStats = {
       ...defaultTrustStats,
       ...(borrowerProfile.trustStats || {}),
@@ -707,6 +701,11 @@ export const inspectReturn = async ({
     } else {
       nextStats.returnIssues = (currentStats.returnIssues || 0) + 1;
     }
+
+    const fallbackRating = Number(borrowerProfile.trustRating);
+    const nextRating =
+      calculateAggregateTrustRating(nextStats) ??
+      (Number.isFinite(fallbackRating) ? fallbackRating : 3);
 
     // TODO: For production, move trust rating calculation/update to Firebase
     // Cloud Functions. This frontend implementation is used for the FYP

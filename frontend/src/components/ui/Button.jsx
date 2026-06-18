@@ -16,7 +16,7 @@ function Button({
 }) {
   return (
     <button
-      className={`rounded-xl border px-4 py-2 font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`rounded-xl border px-4 py-2 font-semibold shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-sm ${
         fullWidth ? "w-full py-3" : ""
       } ${variants[variant]} ${className}`}
       {...props}

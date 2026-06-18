@@ -2,6 +2,8 @@ import { useProfileSummary } from "../../hooks/useProfileSummary";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
 import { getTrustRating, getTrustStats } from "../../utils/trust";
+import ProfileAvatar from "./ProfileAvatar";
+import TrustBadge from "./TrustBadge";
 import TrustRatingMark from "./TrustRatingMark";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
@@ -31,31 +33,33 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-stone-200 bg-white px-5 py-5 sm:px-6">
-          <div className="flex items-center gap-4">
-            {profile.photoURL ? (
-              <img
-                alt=""
-                className="h-16 w-16 rounded-2xl object-cover"
-                src={profile.photoURL}
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-700 text-2xl font-black text-white">
-                {(profile.username || "U").slice(0, 1).toUpperCase()}
+        <div className="grid items-center gap-4 border-b border-stone-200 bg-white px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <ProfileAvatar profile={profile} size="md" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">
+                  {profile.username || "ShareSync user"}
+                </h2>
+                {profile.pronouns && (
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 ring-1 ring-emerald-100">
+                    {profile.pronouns}
+                  </span>
+                )}
               </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                {profile.username || "ShareSync user"}
-              </h2>
               <TrustRatingMark className="mt-1" rating={trustRating} />
-              <p className="mt-2 text-sm font-semibold text-slate-500">
+              <p className="mt-1 text-sm font-semibold text-slate-500">
                 Joined {formatFirestoreDate(profile.createdAt, "recently")}
               </p>
             </div>
           </div>
+          <TrustBadge
+            className="justify-self-center"
+            rating={trustRating}
+            size="md"
+          />
           <button
-            className="rounded-full border border-stone-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50"
+            className="justify-self-start rounded-full border border-stone-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-stone-50 sm:justify-self-end"
             type="button"
             onClick={onClose}
           >
@@ -83,6 +87,23 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                 <Stat label="Total Return Issues" value={stats.returnIssues} />
               </div>
             </Section>
+            {(profile.bio || profile.pronouns || profile.activeCommunity) && (
+              <Section title={`${"\u{1F331}"} About`}>
+                <div className="grid gap-3">
+                  {profile.bio && (
+                    <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold leading-7 text-slate-600 ring-1 ring-stone-200">
+                      {profile.bio}
+                    </p>
+                  )}
+                  {profile.pronouns && (
+                    <Stat label="Pronouns" value={profile.pronouns} />
+                  )}
+                  {profile.activeCommunity && (
+                    <Stat label="Community" value={profile.activeCommunity} />
+                  )}
+                </div>
+              </Section>
+            )}
           </aside>
 
           <main className="grid gap-5">

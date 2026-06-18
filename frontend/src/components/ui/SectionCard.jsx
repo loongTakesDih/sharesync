@@ -7,7 +7,7 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`animate-slide-up rounded-2xl border border-stone-200 bg-white/95 p-5 shadow-sm transition-all duration-200 hover:border-emerald-100 hover:shadow-md sm:p-6 ${className}`}
+      className={`sharesync-card-glow animate-slide-up rounded-2xl border border-white/70 bg-white/90 p-5 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-white/95 sm:p-6 ${className}`}
     >
       {(title || actions) && (
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -18,7 +18,7 @@ function SectionCard({
               </h2>
             )}
             {subtitle && (
-              <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
+              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-slate-500">
                 {subtitle}
               </p>
             )}

@@ -279,10 +279,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f6f1] text-slate-800">
-      <div className="animate-soft-pulse pointer-events-none fixed inset-x-0 top-0 h-64 bg-[linear-gradient(135deg,rgba(209,250,229,0.55),rgba(255,255,255,0)_58%)]" />
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 h-72 bg-[linear-gradient(315deg,rgba(254,243,199,0.45),rgba(255,255,255,0)_62%)]" />
-      <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 lg:px-8">
+    <div className="sharesync-atmosphere relative min-h-screen overflow-hidden text-slate-800">
+      <div className="sharesync-dot-grid pointer-events-none fixed inset-0" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-40 bg-white/25 backdrop-blur-[1px]" />
+      <div className="pointer-events-none fixed inset-0 hidden lg:block">
+        <span className="animate-float-slow absolute left-[5%] top-[18%] text-5xl opacity-[0.07]">
+          {"\u{1F4E6}"}
+        </span>
+        <span className="animate-float-slow absolute right-[9%] top-[23%] text-5xl opacity-[0.07] [animation-delay:1.2s]">
+          {"\u{1F4DA}"}
+        </span>
+        <span className="animate-float-slow absolute bottom-[16%] left-[11%] text-5xl opacity-[0.06] [animation-delay:2.1s]">
+          {"\u{1F91D}"}
+        </span>
+        <span className="animate-float-slow absolute bottom-[21%] right-[13%] text-5xl opacity-[0.06] [animation-delay:3s]">
+          {"\u{1F331}"}
+        </span>
+      </div>
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 lg:px-8">
         <AppHeader
           activePage={activePage}
           navigate={navigate}

@@ -1,5 +1,7 @@
 const acceptedImageTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxBase64Length = 700000;
+const maxProfileBase64Length = 500000;
+const maxProfileFileSize = 6 * 1024 * 1024;
 const outputWidth = 600;
 const outputHeight = 450;
 
@@ -59,6 +61,35 @@ export const compressImageToBase64 = async (file) => {
   });
 };
 
+export const compressProfileImageToBase64 = async (file) => {
+  if (!file || !acceptedImageTypes.includes(file.type)) {
+    throw new Error("Please choose a JPEG, PNG, or WebP image.");
+  }
+
+  if (file.size > maxProfileFileSize) {
+    throw new Error("Please choose an image under 6MB.");
+  }
+
+  const source = await readFileAsDataUrl(file);
+  const image = await loadImage(source);
+  const attempts = [
+    { quality: 0.74, size: 420 },
+    { quality: 0.68, size: 360 },
+    { quality: 0.62, size: 320 },
+    { quality: 0.58, size: 280 },
+  ];
+
+  for (const attempt of attempts) {
+    const compressed = drawProfileImage(image, attempt);
+
+    if (compressed.length <= maxProfileBase64Length) {
+      return compressed;
+    }
+  }
+
+  throw new Error("Profile picture is too large. Please choose a smaller image.");
+};
+
 const readFileAsDataUrl = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -116,6 +147,22 @@ const drawCroppedImage = (
     width,
     height
   );
+
+  return canvas.toDataURL("image/jpeg", quality);
+};
+
+const drawProfileImage = (image, { quality, size }) => {
+  const side = Math.min(image.width, image.height);
+  const sourceX = (image.width - side) / 2;
+  const sourceY = (image.height - side) / 2;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  canvas.width = size;
+  canvas.height = size;
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, size, size);
+  context.drawImage(image, sourceX, sourceY, side, side, 0, 0, size, size);
 
   return canvas.toDataURL("image/jpeg", quality);
 };

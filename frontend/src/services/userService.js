@@ -101,6 +101,17 @@ export const isUsernameTaken = async (usernameLower) => {
   return !usernameSnapshot.empty;
 };
 
+export const isUsernameTakenByAnotherUser = async (usernameLower, uid) => {
+  const usernameQuery = query(
+    collection(db, "users"),
+    where("usernameLower", "==", usernameLower),
+    limit(3)
+  );
+  const usernameSnapshot = await getDocs(usernameQuery);
+
+  return usernameSnapshot.docs.some((userDoc) => userDoc.id !== uid);
+};
+
 export const createUserProfile = async ({
   authProvider,
   community,
@@ -150,8 +161,89 @@ export const updateUserActiveCommunity = async ({ community, uid }) => {
   await setDoc(
     doc(db, "users", uid),
     {
-    activeCommunityId: selectedCommunity.communityId || "",
-    activeCommunity: selectedCommunity.name,
+      activeCommunityId: selectedCommunity.communityId || "",
+      activeCommunity: selectedCommunity.name,
+    },
+    { merge: true }
+  );
+};
+
+const mergeUserCommunities = (communities, activeCommunity) => {
+  const nextCommunities = [];
+  const seen = new Set();
+
+  [...communities, activeCommunity]
+    .map(toUserCommunitySummary)
+    .filter((community) => community?.name)
+    .forEach((community) => {
+      const key = community.communityId || community.name.toLowerCase();
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        nextCommunities.push(community);
+      }
+    });
+
+  return nextCommunities;
+};
+
+export const updateEditableUserProfile = async ({
+  bio = "",
+  gender = "",
+  profileImageBase64 = "",
+  pronouns = "",
+  selectedCommunity,
+  user,
+  userProfile,
+  username,
+}) => {
+  if (!user?.uid) {
+    throw new Error("Please log in before updating your profile.");
+  }
+
+  const trimmedUsername = username.trim();
+  const usernameLower = getUsernameLower(trimmedUsername);
+
+  if (!trimmedUsername) {
+    throw new Error("Username is required.");
+  }
+
+  if (bio.length > 300) {
+    throw new Error("Bio must be 300 characters or fewer.");
+  }
+
+  if (await isUsernameTakenByAnotherUser(usernameLower, user.uid)) {
+    throw new Error("That username is already taken.");
+  }
+
+  const activeCommunity = await ensureCommunityForUser({
+    community: selectedCommunity,
+    user,
+  });
+  const userCommunity = toUserCommunitySummary(activeCommunity);
+
+  if (!userCommunity?.name) {
+    throw new Error("Please select or create your community.");
+  }
+
+  const communities = mergeUserCommunities(
+    userProfile?.communities || [],
+    userCommunity
+  );
+
+  await setDoc(
+    doc(db, "users", user.uid),
+    {
+      username: trimmedUsername,
+      usernameLower,
+      bio: bio.trim(),
+      gender: gender.trim(),
+      pronouns: pronouns.trim(),
+      profileImageBase64,
+      communities,
+      activeCommunityId: userCommunity.communityId || "",
+      activeCommunity: userCommunity.name,
+      updatedAt: serverTimestamp(),
     },
     { merge: true }
   );

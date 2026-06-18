@@ -251,7 +251,7 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
                   </Info>
                 )}
                 {request.trustRatingDelta !== undefined && (
-                  <Info label="Trust rating delta">
+                  <Info label="Trust outcome weight">
                     {Number(request.trustRatingDelta) > 0 ? "+" : ""}
                     {Number(request.trustRatingDelta).toFixed(1)}
                   </Info>

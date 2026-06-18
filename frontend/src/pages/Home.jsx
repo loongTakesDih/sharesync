@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import MarketplaceView from "../components/marketplace/MarketplaceView";
-import PageHeader from "../components/ui/PageHeader";
 import SectionCard from "../components/ui/SectionCard";
 import { useItems } from "../hooks/useItems";
 import { useMyItems } from "../hooks/useMyItems";
@@ -18,7 +17,6 @@ function Home({
   listIntent,
   navigate,
   onCommunityChange,
-  onListItem,
   onSearchChange,
   pagePaths,
   searchTerm,
@@ -62,47 +60,61 @@ function Home({
   const hasStructuredCommunities = userProfile.communities.some(
     (community) => community.communityId
   );
+  const communityLabel = activeCommunity || "your community";
 
   const quickActions = [
     {
-      label: "My Items",
       helper: "Edit listings and availability.",
-      mark: "📦",
-      tone: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+      label: "My Items",
+      mark: "\u{1F4E6}",
       onClick: () => navigate(pagePaths.myItems),
+      tone: "bg-emerald-50 text-emerald-800 ring-emerald-100",
     },
     {
-      label: "Requests",
       helper: "Review borrowing activity.",
-      mark: "🤝",
-      tone: "bg-amber-50 text-amber-800 ring-amber-100",
+      label: "Requests",
+      mark: "\u{1F91D}",
       onClick: () => navigate(pagePaths.requests),
+      tone: "bg-amber-50 text-amber-800 ring-amber-100",
     },
     {
-      label: "History",
       helper: "See completed records.",
-      mark: "🕘",
-      tone: "bg-sky-50 text-sky-800 ring-sky-100",
+      label: "History",
+      mark: "\u{1F552}",
       onClick: () => navigate(pagePaths.history),
+      tone: "bg-sky-50 text-sky-800 ring-sky-100",
     },
     {
-      label: "Profile",
       helper: "Manage trust and account details.",
-      mark: "⭐",
-      tone: "bg-violet-50 text-violet-800 ring-violet-100",
+      label: "Profile",
+      mark: "\u{2B50}",
       onClick: () => navigate(pagePaths.profile),
+      tone: "bg-violet-50 text-violet-800 ring-violet-100",
     },
   ];
 
   return (
     <section className="grid gap-6">
-      <PageHeader
-        actions={
-          <div className="grid w-full gap-3">
-            <label className="grid gap-2 text-sm font-bold text-slate-700">
+      <section className="sharesync-card-glow sharesync-hero-texture animate-slide-up relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 backdrop-blur sm:p-7 lg:p-8">
+        <div className="relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
+          <div className="min-w-0">
+            <p className="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-black uppercase tracking-wide text-emerald-800 shadow-sm ring-1 ring-emerald-100">
+              Friendly Community Marketplace
+            </p>
+            <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              Borrow what you need, share what you don't. {"\u{1F331}"}
+            </h1>
+            <p className="mt-4 max-w-3xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">
+              Find practical things from {communityLabel}, keep useful items
+              moving, and make everyday borrowing feel more neighborly.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/70 bg-white/80 p-4 shadow-xl shadow-slate-950/5 backdrop-blur lg:mt-2">
+            <label className="grid gap-2 text-sm font-black text-slate-700">
               Active community
               <select
-                className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition hover:border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 value={activeCommunityId}
                 onChange={(event) => onCommunityChange(event.target.value)}
                 disabled={!hasStructuredCommunities}
@@ -122,19 +134,27 @@ function Home({
                 )}
               </select>
             </label>
-            <button
-              className="rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
-              type="button"
-              onClick={onListItem}
-            >
-              List Item
-            </button>
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <HeroMiniStat
+                label="Available"
+                loading={itemsLoading}
+                value={availableItems.length}
+              />
+              <HeroMiniStat
+                label="Yours"
+                loading={myItemsLoading}
+                value={myItems.length}
+              />
+              <HeroMiniStat
+                label="Open"
+                loading={requestsLoading}
+                value={activeRequests.length}
+              />
+            </div>
           </div>
-        }
-        eyebrow="Home"
-        subtitle={`Borrow useful things from ${activeCommunity}, or list something your neighbors can use.`}
-        title={`Find something nearby, ${userProfile.username}.`}
-      />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
@@ -157,7 +177,7 @@ function Home({
           <SectionCard
             actions={
               <button
-                className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
+                className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-800 active:scale-[0.98]"
                 type="button"
                 onClick={() => navigate(pagePaths.requests)}
               >
@@ -165,7 +185,7 @@ function Home({
               </button>
             }
             subtitle="Owner-side requests that may need a reply or handover step."
-            title="Needs Action"
+            title={`${"\u{1F4AC}"} Needs Action`}
           >
             {requestsLoading && (
               <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-500 ring-1 ring-stone-200">
@@ -175,7 +195,7 @@ function Home({
 
             {!requestsLoading && actionableRequests.length === 0 && (
               <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-100">
-                No urgent actions right now.
+                No urgent actions right now {"\u{1F389}"}
               </p>
             )}
 
@@ -201,17 +221,17 @@ function Home({
             )}
           </SectionCard>
 
-          <SectionCard title="Quick Actions">
+          <SectionCard title={`${"\u{2728}"} Quick Actions`}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {quickActions.map((action) => (
                 <button
-                  className="group flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98]"
+                  className="group flex items-center gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98]"
                   key={action.label}
                   type="button"
                   onClick={action.onClick}
                 >
                   <span
-                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg font-black ring-1 ${action.tone}`}
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg font-black ring-1 transition-transform duration-200 group-hover:scale-105 ${action.tone}`}
                   >
                     {action.mark}
                   </span>
@@ -228,7 +248,7 @@ function Home({
             </div>
           </SectionCard>
 
-          <SectionCard title="Community Summary">
+          <SectionCard title={`${"\u{1F3E0}"} Community Summary`}>
             <div className="grid gap-3">
               <SummaryRow label="Active community" value={activeCommunity} />
               <SummaryRow
@@ -263,11 +283,24 @@ function Home({
 
 function SummaryRow({ label, loading = false, value }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-stone-50 px-4 py-3 ring-1 ring-stone-200">
+    <div className="flex items-start justify-between gap-4 rounded-2xl bg-gradient-to-r from-stone-50 to-white px-4 py-3 ring-1 ring-stone-200/70">
       <span className="text-sm font-bold text-slate-500">{label}</span>
       <span className="text-right text-sm font-black text-slate-900">
         {loading ? "..." : value}
       </span>
+    </div>
+  );
+}
+
+function HeroMiniStat({ label, loading = false, value }) {
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 px-3 py-3 text-center ring-1 ring-white/80">
+      <p className="text-xl font-black text-slate-950">
+        {loading ? "..." : value}
+      </p>
+      <p className="mt-1 text-[0.68rem] font-black uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
     </div>
   );
 }

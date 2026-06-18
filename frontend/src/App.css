@@ -33,6 +33,59 @@
   }
 }
 
+@keyframes shareSyncFloatSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0) rotate(2deg);
+  }
+}
+
+@keyframes shareSyncFloatMedium {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(1deg);
+  }
+
+  50% {
+    transform: translate3d(8px, -12px, 0) rotate(-2deg);
+  }
+}
+
+@keyframes shareSyncOrbitSlow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shareSyncOrbitReverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes shareSyncGradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 .animate-fade-in {
   animation: shareSyncFadeIn 180ms ease-out both;
 }
@@ -43,4 +96,85 @@
 
 .animate-soft-pulse {
   animation: shareSyncSoftPulse 2.4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: shareSyncFloatSlow 7s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: shareSyncFloatMedium 5.5s ease-in-out infinite;
+}
+
+.animate-orbit-slow {
+  animation: shareSyncOrbitSlow 22s linear infinite;
+}
+
+.animate-orbit-reverse {
+  animation: shareSyncOrbitReverse 28s linear infinite;
+}
+
+.animate-gradient-shift {
+  animation: shareSyncGradientShift 12s ease-in-out infinite;
+  background-size: 180% 180%;
+}
+
+.sharesync-atmosphere {
+  background:
+    radial-gradient(circle at 8% 6%, rgba(16, 185, 129, 0.18), transparent 24rem),
+    radial-gradient(circle at 92% 10%, rgba(251, 146, 60, 0.18), transparent 26rem),
+    radial-gradient(circle at 12% 86%, rgba(253, 224, 71, 0.15), transparent 24rem),
+    radial-gradient(circle at 88% 78%, rgba(20, 184, 166, 0.16), transparent 28rem),
+    linear-gradient(135deg, #fff9ed 0%, #f8f6f1 46%, #f0fdfa 100%);
+}
+
+.sharesync-auth-atmosphere {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(16, 185, 129, 0.22), transparent 18rem),
+    radial-gradient(circle at 82% 12%, rgba(251, 146, 60, 0.2), transparent 18rem),
+    radial-gradient(circle at 76% 82%, rgba(125, 211, 252, 0.18), transparent 20rem),
+    radial-gradient(circle at 18% 88%, rgba(217, 249, 157, 0.2), transparent 18rem),
+    linear-gradient(135deg, #fff7ed 0%, #f8f6f1 42%, #ecfeff 100%);
+}
+
+.sharesync-dot-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.12) 0.7px, transparent 0.7px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.58), transparent 78%);
+}
+
+.sharesync-auth-dots {
+  background-image:
+    radial-gradient(rgba(16, 185, 129, 0.16) 0.8px, transparent 0.8px),
+    radial-gradient(rgba(251, 146, 60, 0.12) 0.8px, transparent 0.8px);
+  background-position:
+    0 0,
+    11px 11px;
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 78%);
+}
+
+.sharesync-hero-texture {
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.55), transparent 48%),
+    radial-gradient(circle at 15% 18%, rgba(16, 185, 129, 0.18), transparent 16rem),
+    radial-gradient(circle at 88% 12%, rgba(251, 146, 60, 0.2), transparent 18rem),
+    radial-gradient(circle at 65% 96%, rgba(20, 184, 166, 0.18), transparent 20rem);
+}
+
+.sharesync-card-glow {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }

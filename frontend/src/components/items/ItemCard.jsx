@@ -21,7 +21,7 @@ function ItemCard({
   const canSave = Boolean(onToggleSaved) && !isOwnItem;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white/95 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_40px_rgba(15,23,42,0.07)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:bg-white hover:shadow-lg">
       <div
         className={`block w-full flex-1 text-left ${
           canOpenDetail ? "cursor-pointer" : ""
@@ -47,8 +47,8 @@ function ItemCard({
                   aria-label={saved ? "Remove from saved items" : "Save item"}
                   className={
                     saved
-                      ? "grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-lg font-black text-rose-600 shadow-sm ring-1 ring-rose-100 backdrop-blur transition hover:scale-105"
-                      : "grid h-10 w-10 place-items-center rounded-full bg-white/95 text-lg font-black text-slate-500 shadow-sm ring-1 ring-white/70 backdrop-blur transition hover:scale-105 hover:text-rose-600"
+                      ? "grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-lg font-black text-rose-600 shadow-md ring-1 ring-rose-100 backdrop-blur transition hover:scale-105"
+                      : "grid h-10 w-10 place-items-center rounded-full bg-white/95 text-lg font-black text-slate-500 shadow-md ring-1 ring-white/70 backdrop-blur transition hover:scale-105 hover:text-rose-600"
                   }
                   disabled={savingSaved}
                   type="button"
@@ -65,7 +65,7 @@ function ItemCard({
           {item.imageBase64 && (
             <img
               alt={item.name}
-              className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               src={item.imageBase64}
             />
           )}
@@ -73,7 +73,7 @@ function ItemCard({
           <div className="flex h-full items-end justify-between">
             <div className="relative z-10 p-4">
               {!item.imageBase64 && (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/85 text-2xl font-black text-emerald-800 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/85 text-2xl font-black text-emerald-800 shadow-md ring-1 ring-white/60">
                   {(item.name || "?").slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -97,11 +97,11 @@ function ItemCard({
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-amber-50 px-3 py-1 font-bold text-amber-800 ring-1 ring-amber-100">
+            <span className="rounded-full bg-amber-50 px-3 py-1 font-bold text-amber-800 shadow-sm ring-1 ring-amber-100">
               {categoryLabel}
             </span>
             <button
-              className="rounded-full bg-emerald-50 px-3 py-1 font-bold text-emerald-800 transition hover:bg-emerald-100"
+              className="rounded-full bg-emerald-50 px-3 py-1 font-bold text-emerald-800 shadow-sm ring-1 ring-emerald-100 transition hover:bg-emerald-100"
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
@@ -118,7 +118,7 @@ function ItemCard({
       </div>
 
       {hasFooterLeadingContent && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100/80 bg-gradient-to-r from-white to-stone-50/80 px-5 py-4">
           {showAvailability && (
             <strong
               className={
