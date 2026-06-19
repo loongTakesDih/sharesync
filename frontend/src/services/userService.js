@@ -16,7 +16,11 @@ import {
   toCommunitySummary,
   toUserCommunitySummary,
 } from "./communityService";
-import { defaultTrustStats, getTrustRating } from "../utils/trust";
+import {
+  defaultTrustStats,
+  getTrustRating,
+  normalizeTrustStats,
+} from "../utils/trust";
 import { getUsernameLower } from "../utils/validators";
 
 const normalizeProfileCommunity = (community) => {
@@ -71,10 +75,7 @@ export const normalizeUserProfile = (profile = {}) => {
     activeCommunity: activeCommunityName,
     reputationScore: profile.reputationScore ?? 60,
     trustRating: getTrustRating(profile),
-    trustStats: {
-      ...defaultTrustStats,
-      ...(profile.trustStats || {}),
-    },
+    trustStats: normalizeTrustStats(profile.trustStats),
   };
 };
 
@@ -155,7 +156,7 @@ export const updateUserActiveCommunity = async ({ community, uid }) => {
   const selectedCommunity = toCommunitySummary(community);
 
   if (!selectedCommunity?.name) {
-    throw new Error("Please select or create your community.");
+    throw new Error("Please select a community before continuing.");
   }
 
   await setDoc(
@@ -223,7 +224,9 @@ export const updateEditableUserProfile = async ({
   const userCommunity = toUserCommunitySummary(activeCommunity);
 
   if (!userCommunity?.name) {
-    throw new Error("Please select or create your community.");
+    throw new Error(
+      "This place could not be prepared as a community. Please choose another result."
+    );
   }
 
   const communities = mergeUserCommunities(

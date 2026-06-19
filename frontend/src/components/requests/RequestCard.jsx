@@ -1,4 +1,5 @@
 import Badge from "../ui/Badge";
+import TrustRatingMark from "../profile/TrustRatingMark";
 import {
   activeBorrowingStatuses,
   closedRequestStatuses,
@@ -9,12 +10,7 @@ import {
   pendingBorrowerRequestStatuses,
 } from "../../utils/requestStatus";
 import { getReturnConditionLabel } from "../../utils/returnInspection";
-import {
-  formatTrustRating,
-  getTrustRating,
-  getTrustStats,
-  renderStars,
-} from "../../utils/trust";
+import { getTrustRating, getTrustStats } from "../../utils/trust";
 
 const acceptButtonClass =
   "inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-700 px-4 py-2 text-center text-sm font-bold leading-5 text-white shadow-sm transition-all duration-200 hover:bg-emerald-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
@@ -95,17 +91,18 @@ function RequestCard({
         </div>
         {isIncoming && request.status === "pending" && trustProfile && (
           <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
-            <p className="text-sm font-bold text-slate-700">
-              Trust Rating: {renderStars(trustRating)}{" "}
-              {formatTrustRating(trustRating)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700">
+              <span>Trust Rating:</span>
+              <TrustRatingMark rating={trustRating} size="sm" />
+            </div>
             <p className="mt-1 text-xs font-medium text-slate-500">
               Completed Borrows: {trustStats.completedBorrows}
             </p>
-            {trustRating < 2.5 && (
-              <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700 ring-1 ring-red-100">
-                This borrower has a low trust rating. Review carefully before
-                accepting.
+            {trustRating <= 2.5 && (
+              <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 ring-1 ring-amber-100">
+                {trustRating <= 1.5
+                  ? "Warning: This borrower has a low trust rating, borrow at your own risk."
+                  : "Warning: This borrower's trust rating is still recovering."}
               </p>
             )}
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   communityTypes,
   ensureCommunityForUser,
+  getCommunityLocationLabel,
   searchActiveCommunities,
   searchOsmCommunities,
   toCommunitySummary,
@@ -407,10 +408,14 @@ function ExistingCommunityResults({
       )}
 
       {!loading &&
-        results.map((community) => (
+        results.map((community, index) => (
           <CommunityResultButton
             community={community}
-            key={community.communityId || community.externalId}
+            key={
+              community.communityId ||
+              community.externalId ||
+              `${community.name}-${community.displayName}-${index}`
+            }
             label={getShareSyncResultLabel(community)}
             onSelect={onSelect}
             selected={selected}
@@ -455,10 +460,14 @@ function ResultSection({
       )}
 
       {!loading &&
-        results.map((community) => (
+        results.map((community, index) => (
           <CommunityResultButton
             community={community}
-            key={community.communityId || community.externalId}
+            key={
+              community.communityId ||
+              community.externalId ||
+              `${community.name}-${community.displayName}-${index}`
+            }
             label={label}
             onSelect={onSelect}
             selected={selected}
@@ -488,9 +497,7 @@ function SelectedCommunityPreview({ selected }) {
       </p>
       <p className="mt-1 font-black text-emerald-950">{selected.name}</p>
       <p className="mt-1 font-semibold text-emerald-800">
-        {[selected.area, selected.state, selected.country, selected.type]
-          .filter(Boolean)
-          .join(" - ")}
+        {getCommunityLocationLabel(selected)}
       </p>
       {selected.source === "osm" && (
         <p className="mt-1 text-xs font-bold text-emerald-700">
@@ -503,8 +510,12 @@ function SelectedCommunityPreview({ selected }) {
 
 function CommunityResultButton({ community, label, onSelect, selected }) {
   const isSelected =
-    selected?.communityId === community.communityId ||
-    selected?.externalId === community.externalId;
+    (community.communityId && selected?.communityId === community.communityId) ||
+    (community.externalId && selected?.externalId === community.externalId) ||
+    (!community.communityId &&
+      !community.externalId &&
+      selected?.name === community.name &&
+      selected?.displayName === community.displayName);
 
   return (
     <button
@@ -516,9 +527,7 @@ function CommunityResultButton({ community, label, onSelect, selected }) {
         {community.name}
       </span>
       <span className="mt-1 block text-sm font-semibold text-slate-500">
-        {[community.area, community.state, community.type]
-          .filter(Boolean)
-          .join(" - ")}
+        {getCommunityLocationLabel(community)}
       </span>
       {community.displayName && community.displayName !== community.name && (
         <span className="mt-1 line-clamp-2 block text-xs font-semibold text-slate-500">

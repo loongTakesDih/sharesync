@@ -20,10 +20,16 @@ import {
   getTrustAdjustmentForCondition,
   returnIssueConditions,
 } from "../utils/returnInspection";
-import { closedRequestStatuses } from "../utils/requestStatus";
+import {
+  activeBorrowLimitStatuses,
+  closedRequestStatuses,
+} from "../utils/requestStatus";
 import {
   calculateAggregateTrustRating,
-  defaultTrustStats,
+  getBorrowLimitForRating,
+  getBorrowLimitMessage,
+  getTrustRating,
+  normalizeTrustStats,
 } from "../utils/trust";
 
 const getActiveCommunityName = ({ activeCommunity, activeCommunityObject }) =>
@@ -209,6 +215,28 @@ export const createRequest = async ({
     !freshItem.available
   ) {
     throw new Error("This item is no longer available.");
+  }
+
+  const [borrowerSnapshot, borrowerRequestsSnapshot] = await Promise.all([
+    getDoc(doc(db, "users", user.uid)),
+    getDocs(
+      query(
+        collection(db, "requests"),
+        where("borrowerId", "==", user.uid)
+      )
+    ),
+  ]);
+  const borrowerProfile = borrowerSnapshot.exists()
+    ? borrowerSnapshot.data()
+    : userProfile;
+  const trustRating = getTrustRating(borrowerProfile);
+  const borrowLimit = getBorrowLimitForRating(trustRating);
+  const activeBorrowCount = borrowerRequestsSnapshot.docs.filter((requestDoc) =>
+    activeBorrowLimitStatuses.includes(requestDoc.data().status)
+  ).length;
+
+  if (borrowLimit !== null && activeBorrowCount >= borrowLimit) {
+    throw new Error(getBorrowLimitMessage(trustRating));
   }
 
   const duplicateRequestQuery = activeCommunityId
@@ -629,6 +657,7 @@ export const inspectReturn = async ({
   }
 
   const inspectionNote = note.trim();
+  const hasReturnIssue = returnIssueConditions.includes(condition);
   const shouldProcessTrustRating =
     freshRequest.trustScoreProcessed !== true &&
     freshRequest.trustRatingProcessed !== true;
@@ -637,13 +666,13 @@ export const inspectReturn = async ({
     ? {
         trustRatingProcessed: true,
         trustRatingProcessedAt: serverTimestamp(),
-        trustRatingDelta: adjustment.ratingDelta,
+        returnScore: adjustment.score,
         trustScoreProcessed: true,
         trustScoreProcessedAt: serverTimestamp(),
       }
     : {};
 
-  if (adjustment.completed) {
+  if (!hasReturnIssue) {
     batch.update(requestRef, {
       status: "completed",
       returnCondition: condition,
@@ -659,9 +688,7 @@ export const inspectReturn = async ({
       availableSince: serverTimestamp(),
     });
   } else {
-    const issueType = returnIssueConditions.includes(condition)
-      ? condition
-      : "other";
+    const issueType = hasReturnIssue ? condition : "other";
 
     batch.update(requestRef, {
       status: "return_issue",
@@ -686,26 +713,20 @@ export const inspectReturn = async ({
     const borrowerProfile = borrowerSnapshot.exists()
       ? borrowerSnapshot.data()
       : {};
-    const currentStats = {
-      ...defaultTrustStats,
-      ...(borrowerProfile.trustStats || {}),
-    };
+    const currentStats = normalizeTrustStats(borrowerProfile.trustStats);
     const nextStats = {
       ...currentStats,
+      completedBorrows: currentStats.completedBorrows + 1,
+      totalReturnScore: currentStats.totalReturnScore + adjustment.score,
       [adjustment.statKey]: (currentStats[adjustment.statKey] || 0) + 1,
       lastUpdatedAt: serverTimestamp(),
     };
 
-    if (adjustment.completed) {
-      nextStats.completedBorrows = (currentStats.completedBorrows || 0) + 1;
-    } else {
+    if (hasReturnIssue) {
       nextStats.returnIssues = (currentStats.returnIssues || 0) + 1;
     }
 
-    const fallbackRating = Number(borrowerProfile.trustRating);
-    const nextRating =
-      calculateAggregateTrustRating(nextStats) ??
-      (Number.isFinite(fallbackRating) ? fallbackRating : 3);
+    const nextRating = calculateAggregateTrustRating(nextStats);
 
     // TODO: For production, move trust rating calculation/update to Firebase
     // Cloud Functions. This frontend implementation is used for the FYP

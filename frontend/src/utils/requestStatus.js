@@ -31,6 +31,12 @@ export const activeBorrowingStatuses = [
   "return_issue",
 ];
 
+export const activeBorrowLimitStatuses = [
+  "pending",
+  ...preHandoverStatuses,
+  ...activeBorrowingStatuses,
+];
+
 export const getStatusBadgeLabel = (status) =>
   ({
     pending: "⏳ Pending",

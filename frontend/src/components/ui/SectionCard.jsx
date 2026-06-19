@@ -2,6 +2,7 @@ function SectionCard({
   actions,
   children,
   className = "",
+  contentClassName = "",
   subtitle,
   title,
 }) {
@@ -26,7 +27,11 @@ function SectionCard({
           {actions}
         </div>
       )}
-      {children}
+      {contentClassName ? (
+        <div className={contentClassName}>{children}</div>
+      ) : (
+        children
+      )}
     </section>
   );
 }

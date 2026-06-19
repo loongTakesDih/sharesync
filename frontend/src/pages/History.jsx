@@ -250,13 +250,20 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
                     {getReturnConditionLabel(returnCondition)}
                   </Info>
                 )}
-                {request.trustRatingDelta !== undefined && (
-                  <Info label="Trust outcome weight">
-                    {Number(request.trustRatingDelta) > 0 ? "+" : ""}
-                    {Number(request.trustRatingDelta).toFixed(1)}
+                {request.returnScore !== undefined && (
+                  <Info label="Return score">
+                    {Number(request.returnScore).toFixed(1)}
                   </Info>
                 )}
-                {request.trustRatingDelta === undefined &&
+                {request.returnScore === undefined &&
+                  request.trustRatingDelta !== undefined && (
+                    <Info label="Legacy trust outcome weight">
+                      {Number(request.trustRatingDelta) > 0 ? "+" : ""}
+                      {Number(request.trustRatingDelta).toFixed(1)}
+                    </Info>
+                  )}
+                {request.returnScore === undefined &&
+                  request.trustRatingDelta === undefined &&
                   request.trustScoreDelta !== undefined && (
                   <Info label="Legacy trust score delta">
                     {Number(request.trustScoreDelta) > 0 ? "+" : ""}

@@ -1,11 +1,15 @@
 export const returnConditionOptions = [
-  { label: "Excellent condition", value: "excellent" },
-  { label: "Good condition", value: "good" },
-  { label: "Minor wear", value: "minor_wear" },
-  { label: "Damaged", value: "damaged" },
-  { label: "Missing part", value: "missing_part" },
-  { label: "Not returned properly", value: "not_returned_properly" },
-  { label: "Other", value: "other" },
+  { label: "Excellent condition", score: 5, value: "excellent" },
+  { label: "Good condition", score: 4, value: "good" },
+  { label: "Minor wear", score: 3, value: "minor_wear" },
+  { label: "Other issue", score: 2, value: "other" },
+  { label: "Damaged", score: 1.5, value: "damaged" },
+  { label: "Missing part", score: 1, value: "missing_part" },
+  {
+    label: "Not returned properly",
+    score: 0,
+    value: "not_returned_properly",
+  },
 ];
 
 export const returnIssueConditions = [
@@ -22,38 +26,31 @@ export const getReturnConditionLabel = (condition) =>
 export const getTrustAdjustmentForCondition = (condition) =>
   ({
     excellent: {
-      ratingDelta: 2,
+      score: 5,
       statKey: "excellentReturns",
-      completed: true,
     },
     good: {
-      ratingDelta: 1.5,
+      score: 4,
       statKey: "goodReturns",
-      completed: true,
     },
     minor_wear: {
-      ratingDelta: 0.5,
+      score: 3,
       statKey: "minorWearReturns",
-      completed: true,
     },
     damaged: {
-      ratingDelta: -1,
+      score: 1.5,
       statKey: "damagedReturns",
-      completed: false,
     },
     missing_part: {
-      ratingDelta: -1.5,
+      score: 1,
       statKey: "missingPartReturns",
-      completed: false,
     },
     not_returned_properly: {
-      ratingDelta: -2,
+      score: 0,
       statKey: "notReturnedIssues",
-      completed: false,
     },
     other: {
-      ratingDelta: -0.5,
+      score: 2,
       statKey: "otherIssues",
-      completed: false,
     },
   }[condition]);

@@ -27,6 +27,17 @@ export const cleanCommunityText = (value = "") =>
   value.trim().replace(/\s+/g, " ");
 
 const normalizeLocation = (location) => {
+  if (
+    location?.lat === undefined ||
+    location?.lat === null ||
+    location?.lat === "" ||
+    location?.lng === undefined ||
+    location?.lng === null ||
+    location?.lng === ""
+  ) {
+    return null;
+  }
+
   const lat = Number(location?.lat);
   const lng = Number(location?.lng);
 
@@ -55,6 +66,7 @@ export const toCommunitySummary = (community) => {
   return {
     communityId: community.communityId || community.id || "",
     name,
+    nameLower: normalizeCommunityName(name),
     displayName: cleanCommunityText(community.displayName || name),
     area: cleanCommunityText(community.area || ""),
     state: cleanCommunityText(community.state || ""),
@@ -98,6 +110,16 @@ export const getCommunityLabel = (community) => {
   return details.length
     ? `${summary.name} - ${details.join(", ")}`
     : summary.name;
+};
+
+export const getCommunityLocationLabel = (community) => {
+  const summary = toCommunitySummary(community);
+
+  return (
+    [summary?.area, summary?.state, summary?.country]
+      .filter(Boolean)
+      .join(", ") || "Area not specified"
+  );
 };
 
 export const getActiveCommunities = async () => {
@@ -151,8 +173,7 @@ const findCommunityByExternalId = async (externalId) => {
 
   const externalQuery = query(
     collection(db, "communities"),
-    where("externalId", "==", externalId),
-    limit(1)
+    where("externalId", "==", externalId)
   );
   const externalSnapshot = await getDocs(externalQuery);
 
@@ -160,7 +181,13 @@ const findCommunityByExternalId = async (externalId) => {
     return null;
   }
 
-  const communityDoc = externalSnapshot.docs[0];
+  const communityDoc = externalSnapshot.docs.find(
+    (result) => result.data().source === "osm"
+  );
+
+  if (!communityDoc) {
+    return null;
+  }
 
   return toCommunitySummary({
     communityId: communityDoc.id,
@@ -213,57 +240,54 @@ export const findDuplicateCommunity = async (name) => {
     : null;
 };
 
-const getOsmName = (result) => {
-  const address = result.address || {};
-
-  return cleanCommunityText(
-    result.name ||
-      address.neighbourhood ||
-      address.suburb ||
-      address.residential ||
-      address.building ||
-      address.amenity ||
-      address.road ||
-      result.display_name?.split(",")[0] ||
-      ""
-  );
-};
-
 const getOsmArea = (result) => {
   const address = result.address || {};
 
   return cleanCommunityText(
     address.suburb ||
       address.neighbourhood ||
-      address.city ||
+      address.quarter ||
+      address.city_district ||
+      address.district ||
       address.town ||
+      address.city ||
       address.village ||
-      address.municipality ||
-      address.county ||
       ""
   );
 };
 
-export const toOsmCommunityDraft = (result) => {
-  const address = result.address || {};
-  const name = getOsmName(result);
+export const normalizeOsmCommunity = (result) => {
+  const address = result?.address || {};
+  const rawName = cleanCommunityText(result?.name || "");
+  const rawDisplayName = cleanCommunityText(result?.display_name || "");
+
+  if (!rawName && !rawDisplayName) {
+    return null;
+  }
+
+  const name =
+    rawName ||
+    cleanCommunityText(rawDisplayName.split(",")[0]) ||
+    "Unnamed community";
   const location = normalizeLocation({
-    lat: result.lat,
-    lng: result.lon,
+    lat: result?.lat,
+    lng: result?.lon,
   });
 
   return toCommunitySummary({
     name,
-    displayName: result.display_name || name,
+    displayName: rawDisplayName || name,
     area: getOsmArea(result),
-    state: address.state || address.region || "",
+    state: address.state || address.region || address.county || "",
     country: address.country || "Malaysia",
-    type: "Residential Area",
+    type: result?.type || result?.class || address._type || "Community",
     source: "osm",
     externalId: getOsmExternalId(result),
-    location,
+    ...(location ? { location } : {}),
   });
 };
+
+export const toOsmCommunityDraft = normalizeOsmCommunity;
 
 export const searchOsmCommunities = async (searchTerm = "") => {
   const normalizedSearch = cleanCommunityText(searchTerm);
@@ -290,15 +314,8 @@ export const searchOsmCommunities = async (searchTerm = "") => {
   const results = await response.json();
 
   return results
-    .map(toOsmCommunityDraft)
-    .filter(
-      (community) =>
-        community?.name &&
-        community.externalId &&
-        community.location &&
-        Number.isFinite(community.location.lat) &&
-        Number.isFinite(community.location.lng)
-    )
+    .map(normalizeOsmCommunity)
+    .filter((community) => community?.name)
     .slice(0, 5);
 };
 
@@ -316,10 +333,16 @@ const buildDuplicateError = (duplicate) => {
 };
 
 const createOsmCommunity = async ({ community, user }) => {
+  if (!user?.uid) {
+    throw new Error("Please sign in before creating a community.");
+  }
+
   const summary = toCommunitySummary(community);
 
-  if (!summary?.externalId || !summary?.location) {
-    throw new Error("Please choose a valid OpenStreetMap result.");
+  if (!summary?.name) {
+    throw new Error(
+      "This place could not be prepared as a community. Please choose another result."
+    );
   }
 
   const existingExternal = await findCommunityByExternalId(summary.externalId);
@@ -347,7 +370,7 @@ const createOsmCommunity = async ({ community, user }) => {
     createdBy: user.uid,
     source: "osm",
     externalId: summary.externalId,
-    location: summary.location,
+    ...(summary.location ? { location: summary.location } : {}),
     requiresInvite: false,
     inviteCode: "",
   });
@@ -406,10 +429,16 @@ export const createCommunity = async ({ community, user }) => {
 };
 
 export const ensureCommunityForUser = async ({ community, user }) => {
+  if (!community) {
+    throw new Error("Please select a community before continuing.");
+  }
+
   const summary = toCommunitySummary(community);
 
   if (!summary?.name) {
-    throw new Error("Please select or create your community.");
+    throw new Error(
+      "This place could not be prepared as a community. Please choose another result."
+    );
   }
 
   if (summary.communityId) {

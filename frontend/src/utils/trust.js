@@ -1,5 +1,6 @@
 export const defaultTrustStats = {
   completedBorrows: 0,
+  totalReturnScore: 0,
   excellentReturns: 0,
   goodReturns: 0,
   minorWearReturns: 0,
@@ -16,11 +17,11 @@ export const roundRatingToHalf = (rating) => Math.round(rating * 2) / 2;
 
 const conditionRatingWeights = {
   excellentReturns: 5,
-  goodReturns: 4.5,
-  minorWearReturns: 3.5,
-  damagedReturns: 2,
-  missingPartReturns: 1.5,
-  notReturnedIssues: 0.5,
+  goodReturns: 4,
+  minorWearReturns: 3,
+  damagedReturns: 1.5,
+  missingPartReturns: 1,
+  notReturnedIssues: 0,
   otherIssues: 2,
 };
 
@@ -30,50 +31,48 @@ const getCount = (value) => {
   return Number.isFinite(count) && count > 0 ? count : 0;
 };
 
-export const calculateAggregateTrustRating = (trustStats = {}) => {
+export const normalizeTrustStats = (trustStats = {}) => {
   const stats = {
     ...defaultTrustStats,
     ...trustStats,
   };
-  const positiveConditionCount =
-    getCount(stats.excellentReturns) +
-    getCount(stats.goodReturns) +
-    getCount(stats.minorWearReturns);
-  const issueConditionCount =
-    getCount(stats.damagedReturns) +
-    getCount(stats.missingPartReturns) +
-    getCount(stats.notReturnedIssues) +
-    getCount(stats.otherIssues);
-  const unclassifiedCompleted = Math.max(
-    0,
-    getCount(stats.completedBorrows) - positiveConditionCount
+  const conditionCount = Object.keys(conditionRatingWeights).reduce(
+    (total, key) => total + getCount(stats[key]),
+    0
   );
-  const unclassifiedIssues = Math.max(
-    0,
-    getCount(stats.returnIssues) - issueConditionCount
+  const estimatedReturnScore = Object.entries(conditionRatingWeights).reduce(
+    (total, [key, score]) => total + getCount(stats[key]) * score,
+    0
   );
-  const weightedScore =
-    getCount(stats.excellentReturns) * conditionRatingWeights.excellentReturns +
-    getCount(stats.goodReturns) * conditionRatingWeights.goodReturns +
-    getCount(stats.minorWearReturns) * conditionRatingWeights.minorWearReturns +
-    getCount(stats.damagedReturns) * conditionRatingWeights.damagedReturns +
-    getCount(stats.missingPartReturns) * conditionRatingWeights.missingPartReturns +
-    getCount(stats.notReturnedIssues) *
-      conditionRatingWeights.notReturnedIssues +
-    getCount(stats.otherIssues) * conditionRatingWeights.otherIssues +
-    unclassifiedCompleted * 4 +
-    unclassifiedIssues * 1.5;
-  const totalRecords =
-    positiveConditionCount +
-    issueConditionCount +
-    unclassifiedCompleted +
-    unclassifiedIssues;
+  const storedReturnScore = Number(trustStats?.totalReturnScore);
 
-  if (totalRecords === 0) {
-    return null;
+  return {
+    ...stats,
+    completedBorrows: Math.max(
+      getCount(trustStats?.completedBorrows),
+      conditionCount
+    ),
+    totalReturnScore:
+      trustStats?.totalReturnScore !== undefined &&
+      trustStats?.totalReturnScore !== null &&
+      trustStats?.totalReturnScore !== "" &&
+      Number.isFinite(storedReturnScore) &&
+      storedReturnScore >= 0
+        ? storedReturnScore
+        : estimatedReturnScore,
+  };
+};
+
+export const calculateAggregateTrustRating = (trustStats = {}) => {
+  const stats = normalizeTrustStats(trustStats);
+
+  if (stats.completedBorrows === 0) {
+    return 3;
   }
 
-  return clampRating(roundRatingToHalf(weightedScore / totalRecords));
+  return clampRating(
+    roundRatingToHalf(stats.totalReturnScore / stats.completedBorrows)
+  );
 };
 
 export const convertReputationScoreToRating = (score) => {
@@ -91,33 +90,21 @@ export const convertReputationScoreToRating = (score) => {
 };
 
 export const getTrustRating = (profile) => {
-  const aggregateRating = calculateAggregateTrustRating(profile?.trustStats);
-
-  if (aggregateRating !== null) {
-    return aggregateRating;
-  }
-
-  const rating = Number(profile?.trustRating);
-
-  if (
-    profile?.trustRating !== undefined &&
-    profile?.trustRating !== null &&
-    profile?.trustRating !== "" &&
-    Number.isFinite(rating)
-  ) {
-    return clampRating(rating);
-  }
-
-  if (
-    profile?.reputationScore !== undefined &&
-    profile?.reputationScore !== null &&
-    profile?.reputationScore !== ""
-  ) {
-    return convertReputationScoreToRating(profile.reputationScore);
-  }
-
-  return 3;
+  return calculateAggregateTrustRating(profile?.trustStats);
 };
+
+export const getBorrowLimitForRating = (rating) => {
+  const safeRating = clampRating(Number(rating) || 0);
+
+  if (safeRating <= 1.5) return 1;
+  if (safeRating <= 2.5) return 2;
+  return null;
+};
+
+export const getBorrowLimitMessage = (rating) =>
+  Number(rating) <= 1.5
+    ? "Your trust rating is low. You can only have 1 active borrow at a time. Complete your current borrow responsibly to rebuild trust."
+    : "Your trust rating is still recovering. You can only have 2 active borrows at a time.";
 
 export const formatTrustRating = (rating) =>
   `${clampRating(Number(rating) || 0).toFixed(1)}/5`;
@@ -151,7 +138,5 @@ export const getTrustRatingBadgeClass = (rating) => {
   return "bg-red-50 text-red-700 ring-red-200";
 };
 
-export const getTrustStats = (profile) => ({
-  ...defaultTrustStats,
-  ...(profile?.trustStats || {}),
-});
+export const getTrustStats = (profile) =>
+  normalizeTrustStats(profile?.trustStats);

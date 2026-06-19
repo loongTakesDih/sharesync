@@ -25,6 +25,7 @@ import { fetchUserProfile } from "../services/userService";
 import { formatFirestoreDate } from "../utils/formatDate";
 import {
   activeBorrowingStatuses,
+  closedRequestStatuses,
   ownerNeedsActionStatuses,
   pendingBorrowerRequestStatuses,
 } from "../utils/requestStatus";
@@ -524,7 +525,10 @@ function Requests({
       direction={direction}
       formatCreatedAt={formatCreatedAt}
       getPastTimestamp={() => ""}
-      hasUnreadChat={request.chatUnreadFor?.includes(user.uid)}
+      hasUnreadChat={
+        !closedRequestStatuses.includes(request.status) &&
+        request.chatUnreadFor?.includes(user.uid)
+      }
       key={`${direction}-${request.id}`}
       onAccept={acceptRequest}
       onConfirmHandover={confirmHandover}

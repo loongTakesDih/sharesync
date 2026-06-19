@@ -3,6 +3,7 @@ import AppHeader from "./components/layout/AppHeader";
 import { useAuthProfile } from "./hooks/useAuthProfile";
 import { useRequests } from "./hooks/useRequests";
 import { logoutUser } from "./services/authService";
+import { closedRequestStatuses } from "./utils/requestStatus";
 import "./App.css";
 import CompleteProfile from "./pages/CompleteProfile";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -81,7 +82,11 @@ function App() {
       [
         ...new Set(
           [...incomingRequests, ...outgoingRequests]
-            .filter((request) => request.chatUnreadFor?.includes(user?.uid))
+            .filter(
+              (request) =>
+                !closedRequestStatuses.includes(request.status) &&
+                request.chatUnreadFor?.includes(user?.uid)
+            )
             .map((request) => request.id)
         ),
       ],

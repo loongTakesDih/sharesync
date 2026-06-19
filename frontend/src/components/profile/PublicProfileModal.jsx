@@ -5,6 +5,7 @@ import { getTrustRating, getTrustStats } from "../../utils/trust";
 import ProfileAvatar from "./ProfileAvatar";
 import TrustBadge from "./TrustBadge";
 import TrustRatingMark from "./TrustRatingMark";
+import { CompactOutcomeSummary } from "./ReturnPatternSection";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
 
@@ -107,19 +108,8 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
           </aside>
 
           <main className="grid gap-5">
-            <Section title="✨ Return Condition Breakdown">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <Stat label="Excellent Condition" value={stats.excellentReturns} />
-                <Stat label="Good Condition" value={stats.goodReturns} />
-                <Stat label="Minor Wear" value={stats.minorWearReturns} />
-                <Stat label="Damaged" value={stats.damagedReturns} />
-                <Stat label="Missing Part" value={stats.missingPartReturns} />
-                <Stat
-                  label="Not Returned Properly"
-                  value={stats.notReturnedIssues}
-                />
-                <Stat label="Other Issues" value={stats.otherIssues} />
-              </div>
+            <Section title={`${"\u2728"} Return Pattern`}>
+              <CompactOutcomeSummary trustStats={stats} />
             </Section>
 
             <Section title="📦 Available Items from this User">

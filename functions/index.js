@@ -11,6 +11,8 @@ const db = getFirestore();
 
 const defaultTrustStats = {
   completedBorrows: 0,
+  totalReturnScore: 0,
+  excellentReturns: 0,
   goodReturns: 0,
   minorWearReturns: 0,
   returnIssues: 0,
@@ -21,41 +23,93 @@ const defaultTrustStats = {
 };
 
 const trustAdjustments = {
+  excellent: {
+    score: 5,
+    statKey: "excellentReturns",
+  },
   good: {
-    completed: true,
-    scoreDelta: 3,
+    score: 4,
     statKey: "goodReturns",
   },
   minor_wear: {
-    completed: true,
-    scoreDelta: 1,
+    score: 3,
     statKey: "minorWearReturns",
   },
   damaged: {
-    completed: false,
-    scoreDelta: -10,
+    score: 1.5,
     statKey: "damagedReturns",
   },
   missing_part: {
-    completed: false,
-    scoreDelta: -15,
+    score: 1,
     statKey: "missingPartReturns",
   },
   not_returned_properly: {
-    completed: false,
-    scoreDelta: -20,
+    score: 0,
     statKey: "notReturnedIssues",
   },
   other: {
-    completed: false,
-    scoreDelta: -8,
+    score: 2,
     statKey: "otherIssues",
   },
 };
 
 const targetStatuses = ["completed", "return_issue"];
+const issueConditions = [
+  "damaged",
+  "missing_part",
+  "not_returned_properly",
+  "other",
+];
+const conditionScores = {
+  excellentReturns: 5,
+  goodReturns: 4,
+  minorWearReturns: 3,
+  damagedReturns: 1.5,
+  missingPartReturns: 1,
+  notReturnedIssues: 0,
+  otherIssues: 2,
+};
 
-const clampTrustScore = (score) => Math.max(0, Math.min(100, score));
+const getCount = (value) => {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? count : 0;
+};
+
+const normalizeTrustStats = (trustStats = {}) => {
+  const stats = {...defaultTrustStats, ...trustStats};
+  const conditionCount = Object.keys(conditionScores).reduce(
+      (total, key) => total + getCount(stats[key]),
+      0,
+  );
+  const estimatedReturnScore = Object.entries(conditionScores).reduce(
+      (total, [key, score]) => total + getCount(stats[key]) * score,
+      0,
+  );
+  const storedReturnScore = Number(trustStats.totalReturnScore);
+
+  return {
+    ...stats,
+    completedBorrows: Math.max(
+        getCount(trustStats.completedBorrows),
+        conditionCount,
+    ),
+    totalReturnScore:
+      trustStats.totalReturnScore !== undefined &&
+      trustStats.totalReturnScore !== null &&
+      trustStats.totalReturnScore !== "" &&
+      Number.isFinite(storedReturnScore) &&
+      storedReturnScore >= 0 ?
+        storedReturnScore :
+        estimatedReturnScore,
+  };
+};
+
+const calculateTrustRating = (stats) => {
+  if (stats.completedBorrows === 0) return 3;
+
+  const average = stats.totalReturnScore / stats.completedBorrows;
+  return Math.max(0, Math.min(5, Math.round(average * 2) / 2));
+};
 
 exports.processRequestTrustScore = onDocumentUpdated(
     "requests/{requestId}",
@@ -69,7 +123,10 @@ exports.processRequestTrustScore = onDocumentUpdated(
         return;
       }
 
-      if (after.trustScoreProcessed === true) {
+      if (
+        after.trustScoreProcessed === true ||
+        after.trustRatingProcessed === true
+      ) {
         return;
       }
 
@@ -107,6 +164,7 @@ exports.processRequestTrustScore = onDocumentUpdated(
         if (
           !freshRequest.exists ||
           freshRequestData.trustScoreProcessed === true ||
+          freshRequestData.trustRatingProcessed === true ||
           !targetStatuses.includes(freshRequestData.status)
         ) {
           return;
@@ -123,36 +181,27 @@ exports.processRequestTrustScore = onDocumentUpdated(
         const borrowerData = borrowerSnapshot.exists ?
           borrowerSnapshot.data() :
           {};
-        const currentScore = Number(
-            borrowerData.reputationScore === undefined ?
-              100 :
-              borrowerData.reputationScore,
-        );
-        const currentStats = {
-          ...defaultTrustStats,
-          ...(borrowerData.trustStats || {}),
-        };
-        const nextScore = clampTrustScore(
-            currentScore + freshAdjustment.scoreDelta,
-        );
+        const currentStats = normalizeTrustStats(borrowerData.trustStats);
         const nextStats = {
           ...currentStats,
+          completedBorrows: currentStats.completedBorrows + 1,
+          totalReturnScore:
+            currentStats.totalReturnScore + freshAdjustment.score,
           [freshAdjustment.statKey]:
             (currentStats[freshAdjustment.statKey] || 0) + 1,
           lastUpdatedAt: FieldValue.serverTimestamp(),
         };
 
-        if (freshAdjustment.completed) {
-          nextStats.completedBorrows =
-            (currentStats.completedBorrows || 0) + 1;
-        } else {
+        if (issueConditions.includes(freshRequestData.returnCondition)) {
           nextStats.returnIssues = (currentStats.returnIssues || 0) + 1;
         }
+
+        const nextRating = calculateTrustRating(nextStats);
 
         transaction.set(
             borrowerRef,
             {
-              reputationScore: nextScore,
+              trustRating: nextRating,
               trustStats: nextStats,
             },
             {merge: true},
@@ -160,7 +209,10 @@ exports.processRequestTrustScore = onDocumentUpdated(
         transaction.update(requestRef, {
           trustScoreProcessed: true,
           trustScoreProcessedAt: FieldValue.serverTimestamp(),
-          trustScoreDelta: freshAdjustment.scoreDelta,
+          trustScoreDelta: freshAdjustment.score,
+          trustRatingProcessed: true,
+          trustRatingProcessedAt: FieldValue.serverTimestamp(),
+          returnScore: freshAdjustment.score,
         });
       });
     },

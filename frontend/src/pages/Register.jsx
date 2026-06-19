@@ -3,6 +3,7 @@ import CommunitySelector from "../components/community/CommunitySelector";
 import AuthMessage from "../components/ui/AuthMessage";
 import AuthShell from "../components/ui/AuthShell";
 import { registerWithEmail } from "../services/authService";
+import { toCommunitySummary } from "../services/communityService";
 import {
   createUserProfile,
   isUsernameTaken,
@@ -28,14 +29,15 @@ function Register({ navigate, onProfileCreated }) {
       return;
     }
 
-    if (
-      !community?.name ||
-      !community?.area ||
-      !community?.state ||
-      !community?.country ||
-      !community?.type
-    ) {
-      setMessage("Please select or complete your community.");
+    if (!community) {
+      setMessage("Please select a community before continuing.");
+      return;
+    }
+
+    if (!toCommunitySummary(community)?.name) {
+      setMessage(
+        "This place could not be prepared as a community. Please choose another result."
+      );
       return;
     }
 

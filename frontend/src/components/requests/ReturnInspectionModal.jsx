@@ -60,7 +60,12 @@ function ReturnInspectionModal({
                 checked={condition === option.value}
                 onChange={(event) => onConditionChange(event.target.value)}
               />
-              {option.label}
+              <span className="flex flex-1 items-center justify-between gap-3">
+                <span>{option.label}</span>
+                <span className="text-xs font-black text-emerald-700">
+                  {option.score.toFixed(1)} pts
+                </span>
+              </span>
             </label>
           ))}
         </div>
