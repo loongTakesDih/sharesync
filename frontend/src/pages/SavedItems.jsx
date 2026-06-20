@@ -8,6 +8,7 @@ import { useItems } from "../hooks/useItems";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
 import { useSavedItems } from "../hooks/useSavedItems";
+import { useUserProfiles } from "../hooks/useUserProfiles";
 import { createRequest } from "../services/requestService";
 import {
   removeSavedItem,
@@ -44,6 +45,8 @@ function SavedItems({
     activeCommunityId,
     user,
   });
+  const ownerIds = useMemo(() => items.map((item) => item.ownerId), [items]);
+  const ownerProfiles = useUserProfiles(ownerIds);
 
   const savedLiveItems = useMemo(
     () => items.filter((item) => savedItemIds.has(item.id)),
@@ -222,6 +225,7 @@ function SavedItems({
               onOpenDetail={setSelectedItem}
               onOpenUserProfile={openUserProfile}
               onToggleSaved={handleToggleSaved}
+              ownerProfile={ownerProfiles[item.ownerId]}
               saved={savedItemIds.has(item.id)}
               savingSaved={savingSavedItemId === item.id}
               user={user}
@@ -237,6 +241,7 @@ function SavedItems({
         onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
         onRequest={requestItem}
+        ownerProfile={ownerProfiles[selectedItem?.ownerId]}
         requested={selectedItemIsRequested}
         requesting={selectedItem?.id === requestingItemId}
         user={user}

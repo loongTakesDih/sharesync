@@ -11,6 +11,7 @@ import { usePublicProfileModal } from "../../hooks/usePublicProfileModal";
 import { useItems } from "../../hooks/useItems";
 import { useRequests } from "../../hooks/useRequests";
 import { useSavedItems } from "../../hooks/useSavedItems";
+import { useUserProfiles } from "../../hooks/useUserProfiles";
 import { createItem } from "../../services/itemService";
 import { createRequest } from "../../services/requestService";
 import { toggleSavedItem } from "../../services/savedItemService";
@@ -65,6 +66,8 @@ function MarketplaceView({
     activeCommunityId,
     user,
   });
+  const ownerIds = useMemo(() => items.map((item) => item.ownerId), [items]);
+  const ownerProfiles = useUserProfiles(ownerIds);
   const { outgoingRequests } = useRequests({
     activeCommunity,
     activeCommunityId,
@@ -105,7 +108,12 @@ function MarketplaceView({
     return marketplaceItems.filter((item) => {
       const matchesSearch =
         !normalizedSearch ||
-        [item.name, item.description, item.ownerUsername, item.community]
+        [
+          item.name,
+          item.description,
+          ownerProfiles[item.ownerId]?.username || item.ownerUsername,
+          item.community,
+        ]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(normalizedSearch));
       const matchesCategory =
@@ -113,7 +121,7 @@ function MarketplaceView({
 
       return matchesSearch && matchesCategory;
     });
-  }, [activeCategory, marketplaceItems, searchTerm]);
+  }, [activeCategory, marketplaceItems, ownerProfiles, searchTerm]);
 
   const addItem = async (event) => {
     event.preventDefault();
@@ -419,6 +427,7 @@ function MarketplaceView({
                   onOpenDetail={setSelectedItem}
                   onOpenUserProfile={openUserProfile}
                   onToggleSaved={handleToggleSaved}
+                  ownerProfile={ownerProfiles[item.ownerId]}
                   saved={savedItemIds.has(item.id)}
                   savingSaved={savingSavedItemId === item.id}
                   showAvailability={false}
@@ -436,6 +445,7 @@ function MarketplaceView({
           onOpenDetail={setSelectedItem}
           onOpenUserProfile={openUserProfile}
           onRequest={requestItem}
+          ownerProfile={ownerProfiles[selectedItem?.ownerId]}
           requested={selectedItemIsRequested}
           requesting={selectedItem?.id === requestingItemId}
           user={user}
@@ -639,6 +649,7 @@ function MarketplaceView({
                   onOpenDetail={setSelectedItem}
                   onOpenUserProfile={openUserProfile}
                   onToggleSaved={handleToggleSaved}
+                  ownerProfile={ownerProfiles[item.ownerId]}
                   saved={savedItemIds.has(item.id)}
                   savingSaved={savingSavedItemId === item.id}
                   user={user}
@@ -656,6 +667,7 @@ function MarketplaceView({
         onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
         onRequest={requestItem}
+        ownerProfile={ownerProfiles[selectedItem?.ownerId]}
         requested={selectedItemIsRequested}
         requesting={selectedItem?.id === requestingItemId}
         user={user}

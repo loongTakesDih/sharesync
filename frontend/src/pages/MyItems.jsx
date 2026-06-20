@@ -9,6 +9,7 @@ import PublicProfileModal from "../components/profile/PublicProfileModal";
 import { useMyItems } from "../hooks/useMyItems";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
+import { useUserProfiles } from "../hooks/useUserProfiles";
 import {
   deleteItem as deleteItemDocument,
   getAvailableSinceReset,
@@ -58,6 +59,8 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
     activeCommunityId,
     user,
   });
+  const ownerIds = useMemo(() => items.map((item) => item.ownerId), [items]);
+  const ownerProfiles = useUserProfiles(ownerIds);
   const { incomingRequests } = useRequests({
     activeCommunity,
     activeCommunityId,
@@ -275,6 +278,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
             key={item.id}
             onOpenDetail={setSelectedItem}
             onOpenUserProfile={openUserProfile}
+            ownerProfile={ownerProfiles[item.ownerId]}
             showAvailability
             user={user}
           />
@@ -320,6 +324,7 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
         onClose={() => setSelectedItem(null)}
         onOpenDetail={setSelectedItem}
         onOpenUserProfile={openUserProfile}
+        ownerProfile={ownerProfiles[selectedItem?.ownerId]}
         ownerActions={
           selectedItem && (
             <OwnerManagementActions

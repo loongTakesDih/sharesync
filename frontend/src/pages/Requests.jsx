@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PublicProfileModal from "../components/profile/PublicProfileModal";
 import PageHeader from "../components/ui/PageHeader";
 import PickupModal from "../components/requests/PickupModal";
@@ -9,6 +9,7 @@ import ResolveIssueModal from "../components/requests/ResolveIssueModal";
 import ReturnInspectionModal from "../components/requests/ReturnInspectionModal";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
+import { useUserProfiles } from "../hooks/useUserProfiles";
 import {
   acceptRequest as acceptRequestDocument,
   confirmHandover as confirmHandoverDocument,
@@ -21,7 +22,6 @@ import {
   savePickupDetails as savePickupDetailsDocument,
   withdrawRequest as withdrawRequestDocument,
 } from "../services/requestService";
-import { fetchUserProfile } from "../services/userService";
 import { formatFirestoreDate } from "../utils/formatDate";
 import {
   activeBorrowingStatuses,
@@ -56,7 +56,6 @@ function Requests({
   const [makeItemAvailable, setMakeItemAvailable] = useState(true);
   const [returnSaving, setReturnSaving] = useState(false);
   const [chatRequest, setChatRequest] = useState(null);
-  const [profileMap, setProfileMap] = useState({});
   const {
     closeUserProfile,
     openUserProfile,
@@ -69,7 +68,7 @@ function Requests({
     requestsLoading,
   } = useRequests({ activeCommunity, activeCommunityId, user });
 
-  const relatedUserKey = useMemo(
+  const relatedUserIds = useMemo(
     () =>
       [
         ...new Set(
@@ -77,44 +76,10 @@ function Requests({
             .flatMap((request) => [request.borrowerId, request.ownerId])
             .filter(Boolean)
         ),
-      ]
-        .sort()
-        .join("|"),
+      ],
     [incomingRequests, outgoingRequests]
   );
-
-  useEffect(() => {
-    let active = true;
-
-    const loadProfiles = async () => {
-      const profiles = {};
-      const relatedUserIds = relatedUserKey ? relatedUserKey.split("|") : [];
-
-      if (relatedUserIds.length === 0) {
-        return;
-      }
-
-      await Promise.all(
-        relatedUserIds.map(async (uid) => {
-          const profile = await fetchUserProfile(uid).catch(() => null);
-
-          if (profile) {
-            profiles[uid] = profile;
-          }
-        })
-      );
-
-      if (active) {
-        setProfileMap(profiles);
-      }
-    };
-
-    loadProfiles();
-
-    return () => {
-      active = false;
-    };
-  }, [relatedUserKey]);
+  const profileMap = useUserProfiles(relatedUserIds);
 
   const formatCreatedAt = (createdAt) =>
     formatFirestoreDate(createdAt, "Saving timestamp...");
@@ -665,6 +630,7 @@ function Requests({
       <RequestChatDrawer
         key={activeChatRequest?.id || "request-chat"}
         onClose={closeChat}
+        profilesById={profileMap}
         request={activeChatRequest}
         user={user}
         userProfile={userProfile}

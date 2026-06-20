@@ -1,6 +1,7 @@
 import { useState } from "react";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
+import PreviousUsernamesDropdown from "../components/profile/PreviousUsernamesDropdown";
 import ReturnPatternSection from "../components/profile/ReturnPatternSection";
 import TrustBadge from "../components/profile/TrustBadge";
 import TrustRatingMark from "../components/profile/TrustRatingMark";
@@ -183,6 +184,11 @@ function AboutSection({ userProfile }) {
         <p className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold leading-7 text-slate-600 ring-1 ring-stone-100">
           {userProfile.bio || "No bio added yet."}
         </p>
+        <PreviousUsernamesDropdown
+          currentUsername={userProfile.username}
+          previousUsername={userProfile.previousUsername}
+          previousUsernames={userProfile.previousUsernames}
+        />
         <div className="grid gap-3">
           {details.map(([label, value]) => (
             <div

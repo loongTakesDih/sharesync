@@ -11,7 +11,13 @@ import {
 } from "../../utils/requestStatus";
 import MessageBubble from "./MessageBubble";
 
-function RequestChatDrawer({ onClose, request, user, userProfile }) {
+function RequestChatDrawer({
+  onClose,
+  profilesById = {},
+  request,
+  user,
+  userProfile,
+}) {
   const [messageState, setMessageState] = useState({
     error: "",
     messages: [],
@@ -31,10 +37,16 @@ function RequestChatDrawer({ onClose, request, user, userProfile }) {
     Boolean(request && user) &&
     !isClosed &&
     (request.ownerId === user.uid || request.borrowerId === user.uid);
-  const counterpartLabel = request
+  const counterpartId = request
     ? request.ownerId === user?.uid
-      ? getBorrowerLabel(request)
-      : getOwnerLabel(request)
+      ? request.borrowerId
+      : request.ownerId
+    : "";
+  const counterpartLabel = request
+    ? profilesById[counterpartId]?.username ||
+      (request.ownerId === user?.uid
+        ? getBorrowerLabel(request)
+        : getOwnerLabel(request))
     : "";
   const messages = useMemo(
     () => (messageState.requestId === requestId ? messageState.messages : []),
@@ -183,6 +195,7 @@ function RequestChatDrawer({ onClose, request, user, userProfile }) {
                   key={message.id}
                   message={message}
                   mine={message.senderId === user?.uid}
+                  senderProfile={profilesById[message.senderId]}
                 />
               ))}
             </div>

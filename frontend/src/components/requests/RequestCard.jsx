@@ -42,9 +42,9 @@ function RequestCard({
   user,
 }) {
   const isIncoming = direction === "incoming";
-  const relatedUserLabel = isIncoming
-    ? getBorrowerLabel(request)
-    : getOwnerLabel(request);
+  const relatedUserLabel =
+    trustProfile?.username ||
+    (isIncoming ? getBorrowerLabel(request) : getOwnerLabel(request));
   const relatedUserId = isIncoming ? request.borrowerId : request.ownerId;
   const pastTimestamp = getPastTimestamp(request);
   const trustRating = trustProfile ? getTrustRating(trustProfile) : null;
@@ -82,6 +82,7 @@ function RequestCard({
             type="button"
             onClick={() =>
               onOpenUserProfile?.(relatedUserId, {
+                ...trustProfile,
                 username: relatedUserLabel,
               })
             }

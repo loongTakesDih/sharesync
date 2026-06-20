@@ -85,30 +85,79 @@ export const normalizeUserProfile = (profile = {}) => {
 };
 
 const getTimestampMillis = (timestamp) => timestamp?.toMillis?.() || 0;
+const getStoredCommunityName = (community) =>
+  (typeof community === "string"
+    ? community
+    : community?.name || community?.displayName || community?.area || ""
+  )
+    .trim()
+    .toLowerCase();
+
+const isCommunityMatch = (profile, activeCommunityId, activeCommunity) => {
+  const communityName = getStoredCommunityName(activeCommunity);
+  const communities = Array.isArray(profile.communities)
+    ? profile.communities
+    : [];
+  const matchesId =
+    Boolean(activeCommunityId) &&
+    (profile.activeCommunityId === activeCommunityId ||
+      communities.some((community) =>
+        typeof community === "string"
+          ? community === activeCommunityId
+          : community?.communityId === activeCommunityId
+      ));
+  const matchesName =
+    Boolean(communityName) &&
+    (getStoredCommunityName(profile.activeCommunity) === communityName ||
+      communities.some(
+        (community) => getStoredCommunityName(community) === communityName
+      ));
+
+  return matchesId || matchesName;
+};
 
 export const fetchCommunityNeighbors = async ({
   activeCommunity,
   activeCommunityId,
   currentUserId,
 }) => {
-  const buildQuery = (field, value) =>
-    query(collection(db, "users"), where(field, "==", value), limit(12));
-  let snapshot = null;
+  const buildQuery = (field, operator, value) =>
+    query(collection(db, "users"), where(field, operator, value), limit(24));
+  const queries = [];
 
   if (activeCommunityId) {
-    snapshot = await getDocs(buildQuery("activeCommunityId", activeCommunityId));
+    queries.push(buildQuery("activeCommunityId", "==", activeCommunityId));
+    queries.push(buildQuery("communities", "array-contains", activeCommunityId));
   }
 
-  if ((!snapshot || snapshot.empty) && activeCommunity) {
-    snapshot = await getDocs(buildQuery("activeCommunity", activeCommunity));
+  if (activeCommunity) {
+    queries.push(buildQuery("activeCommunity", "==", activeCommunity));
+    queries.push(buildQuery("communities", "array-contains", activeCommunity));
   }
 
-  if (!snapshot) {
-    return [];
-  }
+  // Older profiles can store community objects that cannot be queried with a
+  // partial array match, so inspect a bounded fallback set client-side.
+  queries.push(query(collection(db, "users"), limit(48)));
 
-  return snapshot.docs
-    .filter((userDoc) => userDoc.id !== currentUserId)
+  const snapshots = await Promise.allSettled(
+    queries.map((communityQuery) => getDocs(communityQuery))
+  );
+  const matchingDocs = new Map();
+
+  snapshots.forEach((result) => {
+    if (result.status === "fulfilled") {
+      result.value.docs.forEach((userDoc) =>
+        matchingDocs.set(userDoc.id, userDoc)
+      );
+    }
+  });
+
+  return [...matchingDocs.values()]
+    .filter(
+      (userDoc) =>
+        userDoc.id !== currentUserId &&
+        isCommunityMatch(userDoc.data(), activeCommunityId, activeCommunity)
+    )
     .map((userDoc) => ({
       uid: userDoc.id,
       ...normalizeUserProfile(userDoc.data()),
@@ -117,7 +166,7 @@ export const fetchCommunityNeighbors = async ({
       (first, second) =>
         getTimestampMillis(second.createdAt) - getTimestampMillis(first.createdAt)
     )
-    .slice(0, 5);
+    .slice(0, 24);
 };
 
 export const fetchUserProfile = async (uid) => {
@@ -276,18 +325,55 @@ export const updateEditableUserProfile = async ({
     communities = mergeUserCommunities(communities, userCommunity);
   }
 
+  const storedProfileDoc = await getDoc(doc(db, "users", user.uid));
+  const storedProfile = storedProfileDoc.exists()
+    ? storedProfileDoc.data()
+    : userProfile || {};
+  const oldUsername = String(storedProfile.username || "").trim();
+  const usernameChanged = oldUsername !== trimmedUsername;
+
+  const profileUpdates = {
+    username: trimmedUsername,
+    usernameLower,
+    bio: bio.trim(),
+    gender: gender.trim(),
+    pronouns: pronouns.trim(),
+    profileImageBase64,
+    communities,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (usernameChanged && oldUsername) {
+    const historyCandidates = [
+      oldUsername,
+      ...(Array.isArray(storedProfile.previousUsernames)
+        ? storedProfile.previousUsernames
+        : []),
+      storedProfile.previousUsername,
+    ];
+    const seen = new Set([usernameLower]);
+
+    profileUpdates.previousUsername = oldUsername;
+    profileUpdates.previousUsernames = historyCandidates
+      .filter((name) => typeof name === "string" && name.trim())
+      .map((name) => name.trim())
+      .filter((name) => {
+        const key = name.toLowerCase();
+
+        if (seen.has(key)) {
+          return false;
+        }
+
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 10);
+    profileUpdates.usernameChangedAt = serverTimestamp();
+  }
+
   await setDoc(
     doc(db, "users", user.uid),
-    {
-      username: trimmedUsername,
-      usernameLower,
-      bio: bio.trim(),
-      gender: gender.trim(),
-      pronouns: pronouns.trim(),
-      profileImageBase64,
-      communities,
-      updatedAt: serverTimestamp(),
-    },
+    profileUpdates,
     { merge: true }
   );
 };

@@ -6,6 +6,7 @@ function ItemCard({
   onOpenDetail,
   onOpenUserProfile,
   onToggleSaved,
+  ownerProfile,
   saved = false,
   savingSaved = false,
   showAvailability = true,
@@ -13,7 +14,8 @@ function ItemCard({
   user,
 }) {
   const isOwnItem = item.ownerId === user?.uid;
-  const ownerLabel = item.ownerUsername || "Neighbor";
+  const ownerLabel =
+    ownerProfile?.username || item.ownerUsername || "Unknown user";
   const categoryLabel = item.category || "Uncategorized";
   const canOpenDetail = Boolean(onOpenDetail);
   const hasFooterLeadingContent = showAvailability || Boolean(actions);
@@ -112,7 +114,9 @@ function ItemCard({
               onClick={(event) => {
                 event.stopPropagation();
                 onOpenUserProfile?.(item.ownerId, {
-                  photoURL: item.ownerPhotoURL || "",
+                  ...ownerProfile,
+                  photoURL:
+                    ownerProfile?.photoURL || item.ownerPhotoURL || "",
                   username: ownerLabel,
                 });
               }}

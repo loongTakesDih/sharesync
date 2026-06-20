@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Badge from "../ui/Badge";
 import TrustRatingMark from "../profile/TrustRatingMark";
-import { fetchUserProfile } from "../../services/userService";
+import { useUserProfiles } from "../../hooks/useUserProfiles";
 import { fetchItemReviews } from "../../services/reviewService";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
@@ -59,50 +59,25 @@ function ItemDetailModal({
   onOpenUserProfile,
   onRequest,
   ownerActions,
+  ownerProfile,
   ownerStatus,
   requested,
   requesting,
   user,
 }) {
-  const [ownerProfileState, setOwnerProfileState] = useState({
-    ownerId: "",
-    profile: null,
-  });
   const [reviewsState, setReviewsState] = useState({
     itemId: "",
     loading: false,
     reviews: [],
   });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!item?.ownerId) {
-      return undefined;
-    }
-
-    fetchUserProfile(item.ownerId)
-      .then((profile) => {
-        if (!cancelled) {
-          setOwnerProfileState({
-            ownerId: item.ownerId,
-            profile,
-          });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOwnerProfileState({
-            ownerId: item.ownerId,
-            profile: null,
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [item?.ownerId]);
+  const reviewerIds = useMemo(
+    () =>
+      reviewsState.itemId === item?.id
+        ? reviewsState.reviews.map((review) => review.borrowerId)
+        : [],
+    [item?.id, reviewsState.itemId, reviewsState.reviews]
+  );
+  const reviewerProfiles = useUserProfiles(reviewerIds);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,9 +108,8 @@ function ItemDetailModal({
   }
 
   const isOwnItem = item.ownerId === user?.uid;
-  const ownerProfile =
-    ownerProfileState.ownerId === item.ownerId ? ownerProfileState.profile : null;
-  const ownerLabel = item.ownerUsername || "ShareSync user";
+  const ownerLabel =
+    ownerProfile?.username || item.ownerUsername || "Unknown user";
   const categoryLabel = getItemCategoryLabel(item);
   const conditionLabel = getItemConditionLabel(item);
   const ownerTrustRating = ownerProfile ? getTrustRating(ownerProfile) : null;
@@ -308,7 +282,9 @@ function ItemDetailModal({
                   type="button"
                   onClick={() =>
                     onOpenUserProfile?.(item.ownerId, {
-                      photoURL: item.ownerPhotoURL || "",
+                      ...ownerProfile,
+                      photoURL:
+                        ownerProfile?.photoURL || item.ownerPhotoURL || "",
                       trustRating: ownerProfile?.trustRating,
                       trustStats: ownerProfile?.trustStats,
                       username: ownerLabel,
@@ -349,44 +325,84 @@ function ItemDetailModal({
               )}
               {!reviewsLoading && reviews.length > 0 && (
                 <div className="mt-4 grid gap-3">
-                  {reviews.slice(0, 5).map((review) => (
-                    <article
-                      className="rounded-2xl bg-gradient-to-r from-stone-50 to-white p-4 ring-1 ring-stone-200"
-                      key={review.id}
-                    >
-                      <div className="flex items-start gap-3">
-                        {review.borrowerProfileImageBase64 ? (
-                          <img
-                            alt=""
-                            className="h-10 w-10 rounded-xl object-cover ring-2 ring-white"
-                            src={review.borrowerProfileImageBase64}
-                          />
-                        ) : (
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-700 font-black text-white">
-                            {(review.borrowerUsername || "B").slice(0, 1).toUpperCase()}
-                          </span>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="font-black text-slate-900">
-                              {review.borrowerUsername || "Borrower"}
+                  {reviews.slice(0, 5).map((review) => {
+                    const reviewerProfile = reviewerProfiles[review.borrowerId];
+                    const reviewerName =
+                      reviewerProfile?.username ||
+                      review.borrowerUsername ||
+                      "Borrower";
+                    const reviewerImage =
+                      reviewerProfile?.profileImageBase64 ||
+                      reviewerProfile?.photoURL ||
+                      review.borrowerProfileImageBase64;
+                    const canOpenReviewer = Boolean(
+                      review.borrowerId && onOpenUserProfile
+                    );
+                    const openReviewerProfile = () =>
+                      onOpenUserProfile?.(review.borrowerId, {
+                        ...reviewerProfile,
+                        profileImageBase64:
+                          reviewerProfile?.profileImageBase64 ||
+                          review.borrowerProfileImageBase64 ||
+                          "",
+                        username: reviewerName,
+                      });
+
+                    return (
+                      <article
+                        className="rounded-2xl bg-gradient-to-r from-stone-50 to-white p-4 ring-1 ring-stone-200"
+                        key={review.id}
+                      >
+                        <div className="flex items-start gap-3">
+                          <button
+                            aria-label={`View ${reviewerName}'s profile`}
+                            className="shrink-0 rounded-xl transition enabled:hover:scale-105 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-emerald-500 disabled:cursor-default"
+                            disabled={!canOpenReviewer}
+                            type="button"
+                            onClick={openReviewerProfile}
+                          >
+                            {reviewerImage ? (
+                              <img
+                                alt=""
+                                className="h-10 w-10 rounded-xl object-cover ring-2 ring-white"
+                                src={reviewerImage}
+                              />
+                            ) : (
+                              <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-700 font-black text-white">
+                                {reviewerName.slice(0, 1).toUpperCase()}
+                              </span>
+                            )}
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <button
+                                className="text-left font-black text-slate-900 underline-offset-4 enabled:hover:text-emerald-800 enabled:hover:underline disabled:cursor-default"
+                                disabled={!canOpenReviewer}
+                                type="button"
+                                onClick={openReviewerProfile}
+                              >
+                                {reviewerName}
+                              </button>
+                              <span className="text-sm font-black text-amber-700">
+                                {"\u2605".repeat(review.rating)} {review.rating}/5
+                              </span>
+                            </div>
+                            {review.comment && (
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                                {review.comment}
+                              </p>
+                            )}
+                            <p className="mt-2 text-xs font-semibold text-slate-400">
+                              {formatFirestoreDate(
+                                review.updatedAt || review.createdAt,
+                                "Recently"
+                              )}
                             </p>
-                            <span className="text-sm font-black text-amber-700">
-                              {"\u2605".repeat(review.rating)} {review.rating}/5
-                            </span>
                           </div>
-                          {review.comment && (
-                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                              {review.comment}
-                            </p>
-                          )}
-                          <p className="mt-2 text-xs font-semibold text-slate-400">
-                            {formatFirestoreDate(review.updatedAt || review.createdAt, "Recently")}
-                          </p>
                         </div>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>

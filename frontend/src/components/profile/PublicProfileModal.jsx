@@ -3,6 +3,7 @@ import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
 import { getTrustRating, getTrustStats } from "../../utils/trust";
 import ProfileAvatar from "./ProfileAvatar";
+import PreviousUsernamesDropdown from "./PreviousUsernamesDropdown";
 import TrustBadge from "./TrustBadge";
 import TrustRatingMark from "./TrustRatingMark";
 import { CompactOutcomeSummary } from "./ReturnPatternSection";
@@ -94,7 +95,10 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                 <Stat label="Total Return Issues" value={stats.returnIssues} />
               </div>
             </Section>
-            {(profile.bio || profile.pronouns) && (
+            {(profile.bio ||
+              profile.pronouns ||
+              profile.previousUsername ||
+              profile.previousUsernames?.length > 0) && (
               <Section title={`${"\u{1F331}"} About`}>
                 <div className="grid gap-3">
                   {profile.bio && (
@@ -105,6 +109,12 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                   {profile.pronouns && (
                     <Stat label="Pronouns" value={profile.pronouns} />
                   )}
+                  <PreviousUsernamesDropdown
+                    compact
+                    currentUsername={profile.username}
+                    previousUsername={profile.previousUsername}
+                    previousUsernames={profile.previousUsernames}
+                  />
                 </div>
               </Section>
             )}

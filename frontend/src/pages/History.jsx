@@ -6,6 +6,7 @@ import EmptyState from "../components/ui/EmptyState";
 import PageHeader from "../components/ui/PageHeader";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
+import { useUserProfiles } from "../hooks/useUserProfiles";
 import { fetchReviewForRequest } from "../services/reviewService";
 import { formatFirestoreDate } from "../utils/formatDate";
 import { getItemCategoryLabel } from "../utils/itemCategories";
@@ -111,6 +112,17 @@ function History({ activeCommunity, activeCommunityId, user, userProfile }) {
         getTimestampMillis(getClosedTimestamp(first.request))
     );
   }, [incomingRequests, outgoingRequests, user.uid]);
+  const relatedUserIds = useMemo(
+    () => [
+      ...new Set(
+        history
+          .flatMap(({ request }) => [request.ownerId, request.borrowerId])
+          .filter(Boolean)
+      ),
+    ],
+    [history]
+  );
+  const profileMap = useUserProfiles(relatedUserIds);
 
   const reviewableRequests = useMemo(
     () =>
@@ -182,6 +194,8 @@ function History({ activeCommunity, activeCommunityId, user, userProfile }) {
               key={`${direction}-${request.id}`}
               onOpenUserProfile={openUserProfile}
               onReview={setReviewModal}
+              borrowerProfile={profileMap[request.borrowerId]}
+              ownerProfile={profileMap[request.ownerId]}
               request={request}
               review={reviewMap[request.id]}
               user={user}
@@ -215,15 +229,17 @@ function History({ activeCommunity, activeCommunityId, user, userProfile }) {
 }
 
 function HistoryCard({
+  borrowerProfile,
   direction,
   onOpenUserProfile,
   onReview,
+  ownerProfile,
   request,
   review,
   user,
 }) {
-  const ownerLabel = getOwnerLabel(request);
-  const borrowerLabel = getBorrowerLabel(request);
+  const ownerLabel = ownerProfile?.username || getOwnerLabel(request);
+  const borrowerLabel = borrowerProfile?.username || getBorrowerLabel(request);
   const closedDate = getClosedDateLabel(request);
   const categoryLabel = getItemCategoryLabel({
     category: request.itemCategory,
@@ -286,6 +302,7 @@ function HistoryCard({
                 label={ownerLabel}
                 onClick={() =>
                   onOpenUserProfile(request.ownerId, {
+                    ...ownerProfile,
                     username: ownerLabel,
                   })
                 }
@@ -296,6 +313,7 @@ function HistoryCard({
                 label={borrowerLabel}
                 onClick={() =>
                   onOpenUserProfile(request.borrowerId, {
+                    ...borrowerProfile,
                     username: borrowerLabel,
                   })
                 }

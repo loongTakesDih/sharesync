@@ -1,12 +1,19 @@
 import { useMemo } from "react";
 import MarketplaceView from "../components/marketplace/MarketplaceView";
+import PublicProfileModal from "../components/profile/PublicProfileModal";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
 import TrustRatingMark from "../components/profile/TrustRatingMark";
 import SectionCard from "../components/ui/SectionCard";
 import { useCommunityNeighbors } from "../hooks/useCommunityNeighbors";
+import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
 import { getProfileActiveCommunity } from "../utils/communityDisplay";
-import { activeBorrowingStatuses } from "../utils/requestStatus";
+import { formatFirestoreDate } from "../utils/formatDate";
+import {
+  activeBorrowingStatuses,
+  ownerNeedsActionStatuses,
+  pendingBorrowerRequestStatuses,
+} from "../utils/requestStatus";
 import { getTrustRating } from "../utils/trust";
 
 function Home({
@@ -32,6 +39,12 @@ function Home({
     activeCommunityId,
     user,
   });
+  const {
+    closeUserProfile,
+    openUserProfile,
+    profile: selectedNeighbor,
+    profileLoading,
+  } = usePublicProfileModal();
   const communities = userProfile?.communities || [];
   const switchableCommunities = communities.filter(
     (community) => community.communityId
@@ -43,14 +56,17 @@ function Home({
       {
         label: "Incoming",
         value: incomingRequests.filter(
-          (request) => request.ownerId === user.uid && request.status === "pending"
+          (request) =>
+            request.ownerId === user.uid &&
+            ownerNeedsActionStatuses.includes(request.status)
         ).length,
       },
       {
         label: "Pending",
         value: outgoingRequests.filter(
           (request) =>
-            request.borrowerId === user.uid && request.status === "pending"
+            request.borrowerId === user.uid &&
+            pendingBorrowerRequestStatuses.includes(request.status)
         ).length,
       },
       {
@@ -252,15 +268,17 @@ function Home({
             )}
             {!neighborsLoading && neighbors.length === 0 && (
               <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-100">
-                No other neighbors found yet.
+                No neighbors found yet.
               </p>
             )}
             {!neighborsLoading && neighbors.length > 0 && (
-              <div className="grid gap-3">
+              <div className="grid max-h-[320px] gap-3 overflow-y-auto p-1 pr-2">
                 {neighbors.map((neighbor) => (
-                  <div
-                    className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-stone-50 to-white px-3 py-3 ring-1 ring-stone-200/70"
+                  <button
+                    className="group flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-stone-50 to-white px-3 py-3 text-left ring-1 ring-stone-200/70 transition hover:-translate-y-0.5 hover:from-emerald-50 hover:ring-emerald-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     key={neighbor.uid}
+                    type="button"
+                    onClick={() => openUserProfile(neighbor.uid, neighbor)}
                   >
                     <ProfileAvatar profile={neighbor} size="sm" />
                     <div className="min-w-0 flex-1">
@@ -270,15 +288,25 @@ function Home({
                       <p className="truncate text-xs font-semibold text-slate-500">
                         {getProfileActiveCommunity(neighbor)}
                       </p>
+                      {neighbor.createdAt && (
+                        <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400">
+                          Joined {formatFirestoreDate(neighbor.createdAt)}
+                        </p>
+                      )}
                     </div>
                     <TrustRatingMark rating={getTrustRating(neighbor)} size="sm" />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </SectionCard>
         </aside>
       </div>
+      <PublicProfileModal
+        loading={profileLoading}
+        onClose={closeUserProfile}
+        profile={selectedNeighbor}
+      />
     </section>
   );
 }

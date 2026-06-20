@@ -1,6 +1,6 @@
 import { formatFirestoreDate } from "../../utils/formatDate";
 
-function MessageBubble({ message, mine }) {
+function MessageBubble({ message, mine, senderProfile }) {
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div
@@ -18,7 +18,7 @@ function MessageBubble({ message, mine }) {
                 : "text-xs font-black text-slate-700"
             }
           >
-            {message.senderUsername || "User"}
+            {senderProfile?.username || message.senderUsername || "User"}
           </span>
           <span
             className={
