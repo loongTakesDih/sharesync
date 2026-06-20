@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PublicProfileModal from "../components/profile/PublicProfileModal";
+import ItemReviewModal from "../components/reviews/ItemReviewModal";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import PageHeader from "../components/ui/PageHeader";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
+import { fetchReviewForRequest } from "../services/reviewService";
 import { formatFirestoreDate } from "../utils/formatDate";
 import { getItemCategoryLabel } from "../utils/itemCategories";
 import { getReturnConditionLabel } from "../utils/returnInspection";
@@ -78,7 +80,9 @@ function getTimestampMillis(timestamp) {
   return timestamp?.toDate ? timestamp.toDate().getTime() : 0;
 }
 
-function History({ activeCommunity, activeCommunityId, user }) {
+function History({ activeCommunity, activeCommunityId, user, userProfile }) {
+  const [reviewModal, setReviewModal] = useState(null);
+  const [reviewMap, setReviewMap] = useState({});
   const {
     closeUserProfile,
     openUserProfile,
@@ -107,6 +111,45 @@ function History({ activeCommunity, activeCommunityId, user }) {
         getTimestampMillis(getClosedTimestamp(first.request))
     );
   }, [incomingRequests, outgoingRequests, user.uid]);
+
+  const reviewableRequests = useMemo(
+    () =>
+      history
+        .filter(
+          ({ direction, request }) =>
+            direction === "outgoing" &&
+            request.status === "completed" &&
+            request.borrowerId === user.uid &&
+            request.itemId
+        )
+        .map(({ request }) => request),
+    [history, user.uid]
+  );
+  useEffect(() => {
+    let cancelled = false;
+
+    if (reviewableRequests.length === 0) {
+      return undefined;
+    }
+
+    Promise.all(
+      reviewableRequests.map(async (request) => [
+        request.id,
+        await fetchReviewForRequest({
+          itemId: request.itemId,
+          requestId: request.id,
+        }).catch(() => null),
+      ])
+    ).then((entries) => {
+      if (!cancelled) {
+        setReviewMap(Object.fromEntries(entries));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reviewableRequests]);
 
   return (
     <section className="grid gap-6">
@@ -138,7 +181,10 @@ function History({ activeCommunity, activeCommunityId, user }) {
               direction={direction}
               key={`${direction}-${request.id}`}
               onOpenUserProfile={openUserProfile}
+              onReview={setReviewModal}
               request={request}
+              review={reviewMap[request.id]}
+              user={user}
             />
           ))}
         </div>
@@ -149,11 +195,33 @@ function History({ activeCommunity, activeCommunityId, user }) {
         onClose={closeUserProfile}
         profile={profile}
       />
+      <ItemReviewModal
+        existingReview={reviewModal ? reviewMap[reviewModal.id] : null}
+        key={reviewModal?.id || "review-modal"}
+        onClose={() => setReviewModal(null)}
+        onSaved={(review) => {
+          setReviewMap((current) => ({
+            ...current,
+            [reviewModal.id]: review,
+          }));
+          setReviewModal(null);
+        }}
+        request={reviewModal}
+        user={user}
+        userProfile={userProfile}
+      />
     </section>
   );
 }
 
-function HistoryCard({ direction, onOpenUserProfile, request }) {
+function HistoryCard({
+  direction,
+  onOpenUserProfile,
+  onReview,
+  request,
+  review,
+  user,
+}) {
   const ownerLabel = getOwnerLabel(request);
   const borrowerLabel = getBorrowerLabel(request);
   const closedDate = getClosedDateLabel(request);
@@ -294,6 +362,25 @@ function HistoryCard({ direction, onOpenUserProfile, request }) {
               This item was deleted by the owner.
             </p>
           )}
+          {direction === "outgoing" &&
+            request.status === "completed" &&
+            request.borrowerId === user.uid &&
+            request.itemId && (
+              <div className="flex flex-wrap items-center gap-3 border-t border-stone-100 pt-4">
+                <button
+                  className="rounded-2xl bg-emerald-700 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-800"
+                  type="button"
+                  onClick={() => onReview(request)}
+                >
+                  {review ? "Edit Review" : "Rate Item"}
+                </button>
+                {review && (
+                  <span className="text-sm font-bold text-amber-700">
+                    {"\u2605".repeat(review.rating)} {review.rating}/5 submitted
+                  </span>
+                )}
+              </div>
+            )}
         </div>
       </div>
     </article>

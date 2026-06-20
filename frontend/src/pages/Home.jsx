@@ -1,14 +1,13 @@
 import { useMemo } from "react";
 import MarketplaceView from "../components/marketplace/MarketplaceView";
+import ProfileAvatar from "../components/profile/ProfileAvatar";
+import TrustRatingMark from "../components/profile/TrustRatingMark";
 import SectionCard from "../components/ui/SectionCard";
-import { useItems } from "../hooks/useItems";
-import { useMyItems } from "../hooks/useMyItems";
+import { useCommunityNeighbors } from "../hooks/useCommunityNeighbors";
 import { useRequests } from "../hooks/useRequests";
-import {
-  closedRequestStatuses,
-  getStatusBadgeLabel,
-  ownerNeedsActionStatuses,
-} from "../utils/requestStatus";
+import { getProfileActiveCommunity } from "../utils/communityDisplay";
+import { activeBorrowingStatuses } from "../utils/requestStatus";
+import { getTrustRating } from "../utils/trust";
 
 function Home({
   activeCommunity,
@@ -23,44 +22,56 @@ function Home({
   user,
   userProfile,
 }) {
-  const { items, loading: itemsLoading } = useItems({
-    activeCommunity,
-    activeCommunityId,
-    user,
-  });
-  const { items: myItems, loading: myItemsLoading } = useMyItems({
-    activeCommunity,
-    activeCommunityId,
-    user,
-  });
   const { incomingRequests, outgoingRequests, requestsLoading } = useRequests({
     activeCommunity,
     activeCommunityId,
     user,
   });
-
-  const availableItems = useMemo(
-    () => items.filter((item) => item.available),
-    [items]
-  );
-  const activeRequests = useMemo(
-    () =>
-      [...incomingRequests, ...outgoingRequests].filter(
-        (request) => !closedRequestStatuses.includes(request.status)
-      ),
-    [incomingRequests, outgoingRequests]
-  );
-  const actionableRequests = useMemo(
-    () =>
-      incomingRequests
-        .filter((request) => ownerNeedsActionStatuses.includes(request.status))
-        .slice(0, 3),
-    [incomingRequests]
-  );
-  const hasStructuredCommunities = userProfile.communities.some(
+  const { loading: neighborsLoading, neighbors } = useCommunityNeighbors({
+    activeCommunity,
+    activeCommunityId,
+    user,
+  });
+  const communities = userProfile?.communities || [];
+  const switchableCommunities = communities.filter(
     (community) => community.communityId
   );
+  const hasMultipleCommunities = switchableCommunities.length > 1;
   const communityLabel = activeCommunity || "your community";
+  const actionCounts = useMemo(
+    () => [
+      {
+        label: "Incoming",
+        value: incomingRequests.filter(
+          (request) => request.ownerId === user.uid && request.status === "pending"
+        ).length,
+      },
+      {
+        label: "Pending",
+        value: outgoingRequests.filter(
+          (request) =>
+            request.borrowerId === user.uid && request.status === "pending"
+        ).length,
+      },
+      {
+        label: "Active Lending",
+        value: incomingRequests.filter(
+          (request) =>
+            request.ownerId === user.uid &&
+            activeBorrowingStatuses.includes(request.status)
+        ).length,
+      },
+      {
+        label: "Active Borrowing",
+        value: outgoingRequests.filter(
+          (request) =>
+            request.borrowerId === user.uid &&
+            activeBorrowingStatuses.includes(request.status)
+        ).length,
+      },
+    ],
+    [incomingRequests, outgoingRequests, user.uid]
+  );
 
   const quickActions = [
     {
@@ -99,59 +110,56 @@ function Home({
         <div className="relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
           <div className="min-w-0">
             <p className="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-black uppercase tracking-wide text-emerald-800 shadow-sm ring-1 ring-emerald-100">
-              Friendly Community Marketplace
+              Active community
             </p>
             <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              Borrow what you need, share what you don't. {"\u{1F331}"}
+              Sharing in {communityLabel}
             </h1>
             <p className="mt-4 max-w-3xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">
-              Find practical things from {communityLabel}, keep useful items
-              moving, and make everyday borrowing feel more neighborly.
+              Borrow, lend, and connect with neighbors in your selected community.
             </p>
           </div>
 
           <div className="rounded-3xl border border-white/70 bg-white/80 p-4 shadow-xl shadow-slate-950/5 backdrop-blur lg:mt-2">
             <label className="grid gap-2 text-sm font-black text-slate-700">
-              Active community
-              <select
-                className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none transition hover:border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                value={activeCommunityId}
-                onChange={(event) => onCommunityChange(event.target.value)}
-                disabled={!hasStructuredCommunities}
-              >
-                {userProfile.communities.map((community) => (
-                  <option
-                    key={community.communityId || community.name}
-                    value={community.communityId}
-                  >
-                    {community.name}
-                  </option>
-                ))}
-                {!hasStructuredCommunities && (
-                  <option value="">
-                    {activeCommunity || "Select or create your community"}
-                  </option>
-                )}
-              </select>
+              {hasMultipleCommunities ? "Switch community" : "Current community"}
+              <div className="relative">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2"
+                >
+                  {"\u{1F3D8}\uFE0F"}
+                </span>
+                <select
+                  className="w-full appearance-none rounded-2xl border border-emerald-100 bg-emerald-50 py-3 pl-11 pr-10 text-sm font-black text-emerald-950 shadow-sm outline-none transition enabled:cursor-pointer enabled:hover:border-emerald-300 enabled:hover:bg-emerald-100 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:cursor-default disabled:opacity-100"
+                  value={activeCommunityId || ""}
+                  onChange={(event) => onCommunityChange(event.target.value)}
+                  disabled={!hasMultipleCommunities}
+                >
+                  {switchableCommunities.length > 0 ? (
+                    switchableCommunities.map((community) => (
+                      <option key={community.communityId} value={community.communityId}>
+                        {community.communityId === activeCommunityId ? "Current - " : ""}
+                        {community.name || community.displayName || community.area}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">{communityLabel}</option>
+                  )}
+                </select>
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-black text-emerald-700"
+                >
+                  {hasMultipleCommunities ? "\u2304" : "\u2713"}
+                </span>
+              </div>
+              <span className="text-xs font-semibold leading-5 text-slate-500">
+                {hasMultipleCommunities
+                  ? "Choose where you want to browse, borrow, and lend."
+                  : "Items and requests are filtered to this community."}
+              </span>
             </label>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <HeroMiniStat
-                label="Available"
-                loading={itemsLoading}
-                value={availableItems.length}
-              />
-              <HeroMiniStat
-                label="Yours"
-                loading={myItemsLoading}
-                value={myItems.length}
-              />
-              <HeroMiniStat
-                label="Open"
-                loading={requestsLoading}
-                value={activeRequests.length}
-              />
-            </div>
           </div>
         </div>
       </section>
@@ -184,41 +192,26 @@ function Home({
                 Open
               </button>
             }
-            subtitle="Owner-side requests that may need a reply or handover step."
+            subtitle="A quick view of borrowing activity. Open Requests for details."
             title={`${"\u{1F4AC}"} Needs Action`}
           >
-            {requestsLoading && (
-              <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-500 ring-1 ring-stone-200">
-                Checking requests...
-              </p>
-            )}
-
-            {!requestsLoading && actionableRequests.length === 0 && (
-              <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-100">
-                No urgent actions right now {"\u{1F389}"}
-              </p>
-            )}
-
-            {!requestsLoading && actionableRequests.length > 0 && (
-              <div className="grid gap-3">
-                {actionableRequests.map((request) => (
-                  <button
-                    className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-sm"
-                    key={request.id}
-                    type="button"
-                    onClick={() => navigate(pagePaths.requests)}
-                  >
-                    <span className="line-clamp-1 text-sm font-black text-slate-950">
-                      {request.itemName || "Borrow request"}
-                    </span>
-                    <span className="mt-1 block line-clamp-1 text-xs font-semibold text-slate-500">
-                      {request.borrowerUsername || "A neighbor"} -{" "}
-                      {getStatusBadgeLabel(request.status)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-3">
+              {actionCounts.map((count) => (
+                <button
+                  className="rounded-2xl bg-gradient-to-br from-stone-50 to-white px-3 py-4 text-center ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:ring-emerald-300"
+                  key={count.label}
+                  type="button"
+                  onClick={() => navigate(pagePaths.requests)}
+                >
+                  <span className="block text-2xl font-black text-slate-950">
+                    {requestsLoading ? "..." : count.value}
+                  </span>
+                  <span className="mt-1 block text-xs font-black uppercase tracking-wide text-slate-500">
+                    {count.label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </SectionCard>
 
           <SectionCard title={`${"\u{2728}"} Quick Actions`}>
@@ -248,60 +241,45 @@ function Home({
             </div>
           </SectionCard>
 
-          <SectionCard title={`${"\u{1F3E0}"} Community Summary`}>
-            <div className="grid gap-3">
-              <SummaryRow label="Active community" value={activeCommunity} />
-              <SummaryRow
-                label="Available to borrow"
-                loading={itemsLoading}
-                value={`${availableItems.length} item${
-                  availableItems.length === 1 ? "" : "s"
-                }`}
-              />
-              <SummaryRow
-                label="Your listings"
-                loading={myItemsLoading}
-                value={`${myItems.length} item${myItems.length === 1 ? "" : "s"}`}
-              />
-              <SummaryRow
-                label="Open requests"
-                loading={requestsLoading}
-                value={`${activeRequests.length} request${
-                  activeRequests.length === 1 ? "" : "s"
-                }`}
-              />
-              {activeCommunityObject?.type && (
-                <SummaryRow label="Community type" value={activeCommunityObject.type} />
-              )}
-            </div>
+          <SectionCard
+            subtitle={`People currently sharing in ${communityLabel}.`}
+            title={`${"\u{1F44B}"} Recently Joined Neighbors`}
+          >
+            {neighborsLoading && (
+              <p className="rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-500 ring-1 ring-stone-200">
+                Finding neighbors...
+              </p>
+            )}
+            {!neighborsLoading && neighbors.length === 0 && (
+              <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-100">
+                No other neighbors found yet.
+              </p>
+            )}
+            {!neighborsLoading && neighbors.length > 0 && (
+              <div className="grid gap-3">
+                {neighbors.map((neighbor) => (
+                  <div
+                    className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-stone-50 to-white px-3 py-3 ring-1 ring-stone-200/70"
+                    key={neighbor.uid}
+                  >
+                    <ProfileAvatar profile={neighbor} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-slate-950">
+                        {neighbor.username || "ShareSync neighbor"}
+                      </p>
+                      <p className="truncate text-xs font-semibold text-slate-500">
+                        {getProfileActiveCommunity(neighbor)}
+                      </p>
+                    </div>
+                    <TrustRatingMark rating={getTrustRating(neighbor)} size="sm" />
+                  </div>
+                ))}
+              </div>
+            )}
           </SectionCard>
         </aside>
       </div>
     </section>
-  );
-}
-
-function SummaryRow({ label, loading = false, value }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-gradient-to-r from-stone-50 to-white px-4 py-3 ring-1 ring-stone-200/70">
-      <span className="text-sm font-bold text-slate-500">{label}</span>
-      <span className="text-right text-sm font-black text-slate-900">
-        {loading ? "..." : value}
-      </span>
-    </div>
-  );
-}
-
-function HeroMiniStat({ label, loading = false, value }) {
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 px-3 py-3 text-center ring-1 ring-white/80">
-      <p className="text-xl font-black text-slate-950">
-        {loading ? "..." : value}
-      </p>
-      <p className="mt-1 text-[0.68rem] font-black uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-    </div>
   );
 }
 

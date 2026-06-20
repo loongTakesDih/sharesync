@@ -39,7 +39,10 @@ const normalizeProfileCommunity = (community) => {
       : null;
   }
 
-  return toUserCommunitySummary(community);
+  return toUserCommunitySummary({
+    ...community,
+    name: community?.name || community?.displayName || community?.area || "",
+  });
 };
 
 export const normalizeUserProfile = (profile = {}) => {
@@ -66,6 +69,8 @@ export const normalizeUserProfile = (profile = {}) => {
   const activeCommunityName =
     activeCommunityObject?.name ||
     getCommunityName(profile.activeCommunity) ||
+    profile.activeCommunity?.displayName ||
+    profile.activeCommunity?.area ||
     "";
 
   return {
@@ -77,6 +82,42 @@ export const normalizeUserProfile = (profile = {}) => {
     trustRating: getTrustRating(profile),
     trustStats: normalizeTrustStats(profile.trustStats),
   };
+};
+
+const getTimestampMillis = (timestamp) => timestamp?.toMillis?.() || 0;
+
+export const fetchCommunityNeighbors = async ({
+  activeCommunity,
+  activeCommunityId,
+  currentUserId,
+}) => {
+  const buildQuery = (field, value) =>
+    query(collection(db, "users"), where(field, "==", value), limit(12));
+  let snapshot = null;
+
+  if (activeCommunityId) {
+    snapshot = await getDocs(buildQuery("activeCommunityId", activeCommunityId));
+  }
+
+  if ((!snapshot || snapshot.empty) && activeCommunity) {
+    snapshot = await getDocs(buildQuery("activeCommunity", activeCommunity));
+  }
+
+  if (!snapshot) {
+    return [];
+  }
+
+  return snapshot.docs
+    .filter((userDoc) => userDoc.id !== currentUserId)
+    .map((userDoc) => ({
+      uid: userDoc.id,
+      ...normalizeUserProfile(userDoc.data()),
+    }))
+    .sort(
+      (first, second) =>
+        getTimestampMillis(second.createdAt) - getTimestampMillis(first.createdAt)
+    )
+    .slice(0, 5);
 };
 
 export const fetchUserProfile = async (uid) => {
@@ -217,22 +258,23 @@ export const updateEditableUserProfile = async ({
     throw new Error("That username is already taken.");
   }
 
-  const activeCommunity = await ensureCommunityForUser({
-    community: selectedCommunity,
-    user,
-  });
-  const userCommunity = toUserCommunitySummary(activeCommunity);
+  let communities = userProfile?.communities || [];
 
-  if (!userCommunity?.name) {
-    throw new Error(
-      "This place could not be prepared as a community. Please choose another result."
-    );
+  if (selectedCommunity) {
+    const joinedCommunity = await ensureCommunityForUser({
+      community: selectedCommunity,
+      user,
+    });
+    const userCommunity = toUserCommunitySummary(joinedCommunity);
+
+    if (!userCommunity?.name) {
+      throw new Error(
+        "This place could not be prepared as a community. Please choose another result."
+      );
+    }
+
+    communities = mergeUserCommunities(communities, userCommunity);
   }
-
-  const communities = mergeUserCommunities(
-    userProfile?.communities || [],
-    userCommunity
-  );
 
   await setDoc(
     doc(db, "users", user.uid),
@@ -244,8 +286,6 @@ export const updateEditableUserProfile = async ({
       pronouns: pronouns.trim(),
       profileImageBase64,
       communities,
-      activeCommunityId: userCommunity.communityId || "",
-      activeCommunity: userCommunity.name,
       updatedAt: serverTimestamp(),
     },
     { merge: true }

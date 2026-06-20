@@ -215,6 +215,7 @@ function App() {
           activeCommunity={activeCommunity}
           activeCommunityId={activeCommunityId}
           user={user}
+          userProfile={userProfile}
         />
       );
     }
@@ -235,7 +236,6 @@ function App() {
       return (
         <Profile
           activeCommunity={activeCommunity}
-          activeCommunityId={activeCommunityId}
           activeCommunityObject={activeCommunityObject}
           user={user}
           userProfile={userProfile}

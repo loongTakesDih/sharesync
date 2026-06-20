@@ -7,10 +7,14 @@ import TrustRatingMark from "../components/profile/TrustRatingMark";
 import SectionCard from "../components/ui/SectionCard";
 import UiStatCard from "../components/ui/StatCard";
 import { useProfileSummary } from "../hooks/useProfileSummary";
+import {
+  getProfileActiveCommunity,
+  getProfileCommunities,
+} from "../utils/communityDisplay";
 import { formatFirestoreDate } from "../utils/formatDate";
 import { getTrustRating, getTrustStats } from "../utils/trust";
 
-function Profile({ activeCommunity, activeCommunityId, user, userProfile }) {
+function Profile({ activeCommunity, user, userProfile }) {
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const trustRating = getTrustRating(userProfile);
@@ -47,9 +51,10 @@ function Profile({ activeCommunity, activeCommunityId, user, userProfile }) {
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="grid gap-6 xl:col-span-4">
           <AboutSection
-            activeCommunity={activeCommunity}
             userProfile={userProfile}
           />
+
+          <CommunityInvolvement userProfile={userProfile} />
 
           <SectionCard title={`${"\u2B50"} Trust Overview`}>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -99,7 +104,6 @@ function Profile({ activeCommunity, activeCommunityId, user, userProfile }) {
 
       {editing && (
         <EditProfileModal
-          activeCommunityId={activeCommunityId}
           onClose={() => setEditing(false)}
           onSaved={setMessage}
           user={user}
@@ -167,11 +171,10 @@ function ProfileHeader({ activeCommunity, onEdit, trustRating, userProfile }) {
   );
 }
 
-function AboutSection({ activeCommunity, userProfile }) {
+function AboutSection({ userProfile }) {
   const details = [
     ["Pronouns", userProfile.pronouns],
     ["Gender", userProfile.gender],
-    ["Active community", activeCommunity],
   ];
 
   return (
@@ -193,6 +196,48 @@ function AboutSection({ activeCommunity, userProfile }) {
             </div>
           ))}
         </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function CommunityInvolvement({ userProfile }) {
+  const communities = getProfileCommunities(userProfile);
+  const activeCommunity = getProfileActiveCommunity(userProfile);
+
+  return (
+    <SectionCard
+      subtitle="Items and requests are shown based on the active community."
+      title={`${"\u{1F3D8}\uFE0F"} Community Involvement`}
+    >
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 p-4 ring-1 ring-emerald-100">
+        <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
+          Currently active in
+        </p>
+        <p className="mt-1 text-lg font-black text-slate-950">
+          {activeCommunity}
+        </p>
+        <p className="mt-1 text-sm font-semibold text-slate-500">
+          {communities.length} {communities.length === 1 ? "community" : "communities"} joined
+        </p>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {communities.length > 0 ? (
+          communities.map(({ community, label }) => (
+            <span
+              className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 ${
+                label === activeCommunity
+                  ? "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                  : "bg-white text-slate-600 ring-stone-200"
+              }`}
+              key={community?.communityId || label}
+            >
+              {label}
+            </span>
+          ))
+        ) : (
+          <span className="text-sm font-semibold text-slate-500">Community not set</span>
+        )}
       </div>
     </SectionCard>
   );

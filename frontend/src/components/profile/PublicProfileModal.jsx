@@ -8,6 +8,10 @@ import TrustRatingMark from "./TrustRatingMark";
 import { CompactOutcomeSummary } from "./ReturnPatternSection";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
+import {
+  getProfileActiveCommunity,
+  getProfileCommunities,
+} from "../../utils/communityDisplay";
 
 function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
   const {
@@ -26,6 +30,8 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
   const trustRating = getTrustRating(profile);
   const stats = getTrustStats(profile);
   const availableItems = ownedItems.filter((item) => item.available === true);
+  const communities = getProfileCommunities(profile);
+  const activeCommunity = getProfileActiveCommunity(profile);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 py-6">
@@ -88,7 +94,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                 <Stat label="Total Return Issues" value={stats.returnIssues} />
               </div>
             </Section>
-            {(profile.bio || profile.pronouns || profile.activeCommunity) && (
+            {(profile.bio || profile.pronouns) && (
               <Section title={`${"\u{1F331}"} About`}>
                 <div className="grid gap-3">
                   {profile.bio && (
@@ -99,12 +105,19 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
                   {profile.pronouns && (
                     <Stat label="Pronouns" value={profile.pronouns} />
                   )}
-                  {profile.activeCommunity && (
-                    <Stat label="Community" value={profile.activeCommunity} />
-                  )}
                 </div>
               </Section>
             )}
+            <Section title={`${"\u{1F3D8}\uFE0F"} Community Presence`}>
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100">
+                <p className="text-sm font-black text-emerald-900">
+                  Active in {activeCommunity}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-emerald-700">
+                  {communities.length} {communities.length === 1 ? "community" : "communities"} joined
+                </p>
+              </div>
+            </Section>
           </aside>
 
           <main className="grid gap-5">

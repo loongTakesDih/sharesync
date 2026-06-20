@@ -89,6 +89,12 @@ function ItemCard({
             <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">
               {availableAge}
             </p>
+            {Number(item.itemReviewCount) > 0 && (
+              <p className="mt-2 text-sm font-black text-amber-700">
+                {item.itemReviewCount}{" "}
+                {Number(item.itemReviewCount) === 1 ? "rating" : "ratings"}
+              </p>
+            )}
             {showDescription && (
               <p className="mt-2 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-600">
                 {item.description || "No description provided."}

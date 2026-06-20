@@ -468,40 +468,39 @@ function Requests({
     }
   };
 
-  const needsActionRequests = incomingRequests
+  const incomingRequestRows = incomingRequests
     .filter(
       (request) =>
         ownerNeedsActionStatuses.includes(request.status) &&
         request.ownerId === user.uid
     )
     .map((request) => ({ direction: "incoming", request }));
-  const activeRequests = [
-    ...incomingRequests
-      .filter(
-        (request) =>
-          activeBorrowingStatuses.includes(request.status) &&
-          request.ownerId === user.uid
-      )
-      .map((request) => ({ direction: "incoming", request })),
-    ...outgoingRequests
-      .filter(
-        (request) =>
-          activeBorrowingStatuses.includes(request.status) &&
-          request.borrowerId === user.uid
-      )
-      .map((request) => ({ direction: "outgoing", request })),
-  ];
-  const pendingRequests = outgoingRequests
+  const activeLendingRows = incomingRequests
+    .filter(
+      (request) =>
+        activeBorrowingStatuses.includes(request.status) &&
+        request.ownerId === user.uid
+    )
+    .map((request) => ({ direction: "incoming", request }));
+  const pendingRequestRows = outgoingRequests
     .filter(
       (request) =>
         pendingBorrowerRequestStatuses.includes(request.status) &&
         request.borrowerId === user.uid
     )
     .map((request) => ({ direction: "outgoing", request }));
+  const activeBorrowingRows = outgoingRequests
+    .filter(
+      (request) =>
+        activeBorrowingStatuses.includes(request.status) &&
+        request.borrowerId === user.uid
+    )
+    .map((request) => ({ direction: "outgoing", request }));
   const allRequestRows = [
-    ...needsActionRequests,
-    ...activeRequests,
-    ...pendingRequests,
+    ...incomingRequestRows,
+    ...activeLendingRows,
+    ...pendingRequestRows,
+    ...activeBorrowingRows,
   ];
   const initialChatRequest = initialChatRequestId
     ? allRequestRows.find(({ request }) => request.id === initialChatRequestId)
@@ -557,10 +556,11 @@ function Requests({
       <PageHeader
         eyebrow="Borrowing workflow"
         meta={
-          <div className="grid w-full grid-cols-3 gap-2">
-            <MiniStat label="Action" value={needsActionRequests.length} />
-            <MiniStat label="Active" value={activeRequests.length} />
-            <MiniStat label="Pending" value={pendingRequests.length} />
+          <div className="grid w-full grid-cols-2 gap-2 xl:grid-cols-4">
+            <MiniStat label="Incoming" value={incomingRequestRows.length} />
+            <MiniStat label="Pending" value={pendingRequestRows.length} />
+            <MiniStat label="Active Lending" value={activeLendingRows.length} />
+            <MiniStat label="Active Borrowing" value={activeBorrowingRows.length} />
           </div>
         }
         subtitle={`Track requests, pickup coordination, active borrowing, and return steps in ${activeCommunity}.`}
@@ -573,29 +573,56 @@ function Requests({
         )}
       </PageHeader>
 
-      <div className="grid gap-6 xl:grid-cols-3 xl:items-start">
-        <RequestSection
-          className="bg-emerald-50/50"
-          emptyMessage="No urgent actions right now."
-          loading={requestsLoading}
-          renderRequestCard={renderRequestCard}
-          requests={needsActionRequests}
-          title="Needs Action"
-        />
-        <RequestSection
-          emptyMessage="No active borrowing records right now."
-          loading={requestsLoading}
-          renderRequestCard={renderRequestCard}
-          requests={activeRequests}
-          title="Active Borrowing"
-        />
-        <RequestSection
-          emptyMessage="No pending requests right now."
-          loading={requestsLoading}
-          renderRequestCard={renderRequestCard}
-          requests={pendingRequests}
-          title="Pending Requests"
-        />
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <section className="grid gap-4 rounded-3xl border border-emerald-100 bg-emerald-50/40 p-4 sm:p-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
+              Owner / Lender side
+            </p>
+            <h2 className="mt-1 text-xl font-black text-slate-950">
+              Items you are sharing
+            </h2>
+          </div>
+          <RequestSection
+            emptyMessage="No incoming requests or pickup steps right now."
+            loading={requestsLoading}
+            renderRequestCard={renderRequestCard}
+            requests={incomingRequestRows}
+            title="Incoming"
+          />
+          <RequestSection
+            emptyMessage="No items are currently lent out."
+            loading={requestsLoading}
+            renderRequestCard={renderRequestCard}
+            requests={activeLendingRows}
+            title="Active Lending"
+          />
+        </section>
+
+        <section className="grid gap-4 rounded-3xl border border-amber-100 bg-amber-50/35 p-4 sm:p-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">
+              Borrower side
+            </p>
+            <h2 className="mt-1 text-xl font-black text-slate-950">
+              Items you requested
+            </h2>
+          </div>
+          <RequestSection
+            emptyMessage="No requests are waiting for approval or pickup."
+            loading={requestsLoading}
+            renderRequestCard={renderRequestCard}
+            requests={pendingRequestRows}
+            title="Pending"
+          />
+          <RequestSection
+            emptyMessage="You are not actively borrowing anything."
+            loading={requestsLoading}
+            renderRequestCard={renderRequestCard}
+            requests={activeBorrowingRows}
+            title="Active Borrowing"
+          />
+        </section>
       </div>
       <PickupModal
         modal={pickupModal}

@@ -204,38 +204,79 @@ function ConditionSpectrum({ completedBorrows, conditions }) {
 }
 
 export function CompactOutcomeSummary({ trustStats }) {
-  const common = getMostCommonOutcomes(getReturnConditionCounts(trustStats));
+  const conditions = getReturnConditionCounts(trustStats);
+  const common = getMostCommonOutcomes(conditions);
   const isEmpty = common.outcomes.length === 0;
   const isSingle = common.outcomes.length === 1;
+  const completedBorrows = Number(trustStats?.completedBorrows) || 0;
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-stone-50 to-emerald-50 p-4 ring-1 ring-stone-200">
-      <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
-        Return Pattern
-      </p>
-      <p className="mt-2 font-black text-slate-950">
-        {isEmpty
-          ? "No return history yet"
-          : isSingle
-            ? common.outcomes[0].label
-            : common.outcomes.length > 4
-              ? "Mixed return history"
-              : "Tied most common outcomes"}
-      </p>
+    <div className="rounded-2xl bg-gradient-to-br from-stone-50 to-emerald-50 p-4 ring-1 ring-stone-200 sm:p-5">
       {isEmpty ? (
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          Return patterns will appear after completed borrows.
-        </p>
+        <div className="rounded-2xl bg-white/80 px-4 py-5 text-center ring-1 ring-stone-200">
+          <p className="font-black text-slate-950">No return history yet.</p>
+          <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+            Return conditions will appear after completed inspections.
+          </p>
+        </div>
       ) : (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {common.outcomes.slice(0, 4).map((outcome) => (
-            <OutcomeChip key={outcome.key} outcome={outcome} />
-          ))}
-          {common.outcomes.length > 4 && (
-            <span className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-black text-white">
-              +{common.outcomes.length - 4} more
-            </span>
-          )}
+        <div className="grid gap-4">
+          <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-white">
+            <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
+              Outcome spotlight
+            </p>
+            <p className="mt-1 font-black text-slate-950">
+              {isSingle
+                ? common.outcomes[0].label
+                : "Tied most common outcomes"}
+            </p>
+            {!isSingle && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {common.outcomes.map((outcome) => (
+                  <OutcomeChip key={outcome.key} outcome={outcome} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            {conditions.map((condition) => {
+              const percentage = getConditionPercentage(
+                condition.count,
+                completedBorrows
+              );
+
+              return (
+                <div
+                  className="rounded-xl bg-white/75 px-3 py-2.5 ring-1 ring-stone-200/80"
+                  key={condition.key}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-sm shadow-sm ring-1 ring-stone-200"
+                    >
+                      {condition.icon}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-black text-slate-700">
+                      {condition.label}
+                    </span>
+                    <span className={`text-sm font-black ${condition.text}`}>
+                      {condition.count}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100">
+                    <div
+                      aria-label={`${condition.label}: ${condition.count}`}
+                      className={`h-full rounded-full bg-gradient-to-r ${condition.gradient}`}
+                      role="img"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

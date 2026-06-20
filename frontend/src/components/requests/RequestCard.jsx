@@ -404,7 +404,7 @@ function getRequestCardStatusLabel(request, isIncoming) {
   }
 
   if (activeBorrowingStatuses.includes(request.status)) {
-    return "Active Borrowing";
+    return isIncoming ? "Active Lending" : "Active Borrowing";
   }
 
   if (!isIncoming) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Badge from "../ui/Badge";
 import TrustRatingMark from "../profile/TrustRatingMark";
 import { fetchUserProfile } from "../../services/userService";
+import { fetchItemReviews } from "../../services/reviewService";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
 import { getItemConditionLabel } from "../../utils/itemCondition";
@@ -67,6 +68,11 @@ function ItemDetailModal({
     ownerId: "",
     profile: null,
   });
+  const [reviewsState, setReviewsState] = useState({
+    itemId: "",
+    loading: false,
+    reviews: [],
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +103,30 @@ function ItemDetailModal({
       cancelled = true;
     };
   }, [item?.ownerId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!item?.id) {
+      return undefined;
+    }
+
+    fetchItemReviews(item.id)
+      .then((reviews) => {
+        if (!cancelled) {
+          setReviewsState({ itemId: item.id, loading: false, reviews });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setReviewsState({ itemId: item.id, loading: false, reviews: [] });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item?.id]);
 
   if (!item) {
     return null;
@@ -129,6 +159,10 @@ function ItemDetailModal({
         (!item.community || candidate.community === item.community)
     )
     .slice(0, 4);
+  const reviews =
+    reviewsState.itemId === item.id ? reviewsState.reviews : [];
+  const reviewsLoading =
+    reviewsState.itemId !== item.id || reviewsState.loading;
 
   let requestLabel = "Request to Borrow";
   let helperText =
@@ -179,11 +213,11 @@ function ItemDetailModal({
           <div className="grid gap-5">
             <div className="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
               <div className="grid gap-0 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,0.95fr)]">
-                <div className="relative min-h-80 bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 xl:min-h-[34rem]">
+                <div className="relative min-h-80 bg-gradient-to-br from-emerald-50 via-stone-100 to-amber-50 xl:min-h-[34rem]">
                   {item.imageBase64 ? (
                     <img
                       alt={item.name}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      className="absolute inset-0 h-full w-full object-contain object-center p-3 sm:p-5"
                       src={item.imageBase64}
                     />
                   ) : (
@@ -284,6 +318,77 @@ function ItemDetailModal({
                   View Profile
                 </button>
               </div>
+            </section>
+
+            <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                    Borrower reviews
+                  </p>
+                  <h3 className="mt-1 text-xl font-black text-slate-950">
+                    What neighbors say about this item
+                  </h3>
+                </div>
+                {!reviewsLoading && reviews.length > 0 && (
+                  <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-800 ring-1 ring-amber-100">
+                    {reviews.length} {reviews.length === 1 ? "rating" : "ratings"}
+                  </span>
+                )}
+              </div>
+
+              {reviewsLoading && (
+                <p className="mt-4 rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-500 ring-1 ring-stone-200">
+                  Loading borrower reviews...
+                </p>
+              )}
+              {!reviewsLoading && reviews.length === 0 && (
+                <p className="mt-4 rounded-2xl bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-500 ring-1 ring-stone-200">
+                  No borrower reviews yet.
+                </p>
+              )}
+              {!reviewsLoading && reviews.length > 0 && (
+                <div className="mt-4 grid gap-3">
+                  {reviews.slice(0, 5).map((review) => (
+                    <article
+                      className="rounded-2xl bg-gradient-to-r from-stone-50 to-white p-4 ring-1 ring-stone-200"
+                      key={review.id}
+                    >
+                      <div className="flex items-start gap-3">
+                        {review.borrowerProfileImageBase64 ? (
+                          <img
+                            alt=""
+                            className="h-10 w-10 rounded-xl object-cover ring-2 ring-white"
+                            src={review.borrowerProfileImageBase64}
+                          />
+                        ) : (
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-700 font-black text-white">
+                            {(review.borrowerUsername || "B").slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-black text-slate-900">
+                              {review.borrowerUsername || "Borrower"}
+                            </p>
+                            <span className="text-sm font-black text-amber-700">
+                              {"\u2605".repeat(review.rating)} {review.rating}/5
+                            </span>
+                          </div>
+                          {review.comment && (
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                              {review.comment}
+                            </p>
+                          )}
+                          <p className="mt-2 text-xs font-semibold text-slate-400">
+                            {formatFirestoreDate(review.updatedAt || review.createdAt, "Recently")}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
 
             {similarListings.length > 0 && (

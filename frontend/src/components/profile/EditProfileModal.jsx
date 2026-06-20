@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import CommunitySelector from "../community/CommunitySelector";
 import { updateEditableUserProfile } from "../../services/userService";
-import { toCommunitySummary } from "../../services/communityService";
 import { compressProfileImageToBase64 } from "../../utils/imageUtils";
+import {
+  getProfileActiveCommunity,
+  getProfileCommunities,
+} from "../../utils/communityDisplay";
 import { inputClass } from "../../utils/styles";
 import ProfileAvatar from "./ProfileAvatar";
 
@@ -10,24 +13,9 @@ const textareaClass = `${inputClass} min-h-28 resize-none`;
 const sectionClass =
   "grid gap-4 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-sm ring-1 ring-stone-100";
 
-function EditProfileModal({ activeCommunityId, onClose, onSaved, user, userProfile }) {
-  const joinedCommunities = useMemo(
-    () => userProfile.communities || [],
-    [userProfile.communities]
-  );
-  const initialCommunity = useMemo(
-    () =>
-      joinedCommunities.find(
-        (community) =>
-          community.communityId && community.communityId === activeCommunityId
-      ) ||
-      joinedCommunities.find(
-        (community) => community.name === userProfile.activeCommunity
-      ) ||
-      joinedCommunities[0] ||
-      null,
-    [activeCommunityId, joinedCommunities, userProfile.activeCommunity]
-  );
+function EditProfileModal({ onClose, onSaved, user, userProfile }) {
+  const joinedCommunities = getProfileCommunities(userProfile);
+  const activeCommunity = getProfileActiveCommunity(userProfile);
   const [username, setUsername] = useState(userProfile.username || "");
   const [bio, setBio] = useState(userProfile.bio || "");
   const [gender, setGender] = useState(userProfile.gender || "");
@@ -35,23 +23,10 @@ function EditProfileModal({ activeCommunityId, onClose, onSaved, user, userProfi
   const [profileImageBase64, setProfileImageBase64] = useState(
     userProfile.profileImageBase64 || ""
   );
-  const [selectedCommunity, setSelectedCommunity] = useState(initialCommunity);
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
-  const selectedCommunitySummary = toCommunitySummary(selectedCommunity);
-
-  const chooseJoinedCommunity = (communityId) => {
-    const community =
-      joinedCommunities.find(
-        (joinedCommunity) => joinedCommunity.communityId === communityId
-      ) ||
-      joinedCommunities.find((joinedCommunity) => joinedCommunity.name === communityId);
-
-    if (community) {
-      setSelectedCommunity(community);
-    }
-  };
 
   const handleImageChange = async (file) => {
     if (!file) {
@@ -251,34 +226,26 @@ function EditProfileModal({ activeCommunityId, onClose, onSaved, user, userProfi
                 {"\u{1F3D8}\uFE0F"} Community
               </h3>
               <p className="mt-1 text-sm font-semibold text-slate-500">
-                Switch between joined communities or join/create a new one.
+                Join another community here. Switch your active community from the homepage.
               </p>
             </div>
 
-            {joinedCommunities.length > 0 && (
-              <label className="grid gap-2 text-sm font-bold text-slate-700">
-                Joined communities
-                <select
-                  className={inputClass}
-                  value={
-                    selectedCommunitySummary?.communityId ||
-                    selectedCommunitySummary?.name ||
-                    ""
-                  }
-                  disabled={saving}
-                  onChange={(event) => chooseJoinedCommunity(event.target.value)}
-                >
-                  {joinedCommunities.map((community) => (
-                    <option
-                      key={community.communityId || community.name}
-                      value={community.communityId || community.name}
-                    >
-                      {community.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
+                Current community
+              </p>
+              <p className="mt-1 font-black text-slate-950">{activeCommunity}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {joinedCommunities.map(({ community, label }) => (
+                  <span
+                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-emerald-100"
+                    key={community?.communityId || label}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <CommunitySelector
               disabled={saving}
@@ -286,6 +253,9 @@ function EditProfileModal({ activeCommunityId, onClose, onSaved, user, userProfi
               user={user}
               onChange={setSelectedCommunity}
             />
+            <p className="text-xs font-semibold leading-5 text-slate-500">
+              Selecting a place adds it to your joined communities. It will not change your current community.
+            </p>
           </section>
 
           <div className="flex flex-col-reverse gap-3 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
