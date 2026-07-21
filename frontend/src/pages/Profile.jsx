@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import EditProfileModal from "../components/profile/EditProfileModal";
+import LendingItemsModal from "../components/profile/LendingItemsModal";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
 import PreviousUsernamesDropdown from "../components/profile/PreviousUsernamesDropdown";
 import ReturnPatternSection from "../components/profile/ReturnPatternSection";
@@ -9,21 +10,84 @@ import SectionCard from "../components/ui/SectionCard";
 import UiStatCard from "../components/ui/StatCard";
 import { useProfileSummary } from "../hooks/useProfileSummary";
 import {
+  getCommunityDisplayName,
   getProfileActiveCommunity,
   getProfileCommunities,
 } from "../utils/communityDisplay";
 import { formatFirestoreDate } from "../utils/formatDate";
-import { getTrustRating, getTrustStats } from "../utils/trust";
+import { getItemCategoryLabel } from "../utils/itemCategories";
+import { activeBorrowingStatuses } from "../utils/requestStatus";
+import {
+  calculateAggregateTrustRating,
+  getTrustStats,
+} from "../utils/trust";
 
 function Profile({ activeCommunity, user, userProfile }) {
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
-  const trustRating = getTrustRating(userProfile);
-  const trustStats = getTrustStats(userProfile);
-  const { error, lendingStats } = useProfileSummary(user.uid, {
-    includeBorrowerRequests: false,
+  const [lendingModal, setLendingModal] = useState(null);
+  const {
+    borrowerRequestsLoaded,
+    derivedTrustStats,
+    error,
+    lendingStats,
+    ownedItems,
+    ownerRequests,
+  } = useProfileSummary(user.uid, {
+    includeBorrowerRequests: true,
     includeOwnerRequests: true,
   });
+  // Reflect the actual borrow records in Firebase; fall back to the stored
+  // counter only until those records have loaded.
+  const trustStats = borrowerRequestsLoaded
+    ? derivedTrustStats
+    : getTrustStats(userProfile);
+  const trustRating = calculateAggregateTrustRating(trustStats);
+
+  // Break the Lending Activity counts down into the actual items, across every
+  // community the user is involved in, for the click-through popups.
+  const availableEntries = useMemo(
+    () =>
+      ownedItems
+        .filter((item) => item.available === true)
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          image: item.imageBase64,
+          communityLabel: getCommunityDisplayName(
+            item.community || item.communityName
+          ),
+          meta: getItemCategoryLabel(item),
+        })),
+    [ownedItems]
+  );
+  const lentOutEntries = useMemo(() => {
+    const seen = new Set();
+
+    return ownerRequests
+      .filter((request) => activeBorrowingStatuses.includes(request.status))
+      .filter((request) => {
+        const key = request.itemId || request.id;
+
+        if (seen.has(key)) {
+          return false;
+        }
+
+        seen.add(key);
+        return true;
+      })
+      .map((request) => ({
+        id: request.id,
+        name: request.itemName,
+        image: request.itemImageBase64,
+        communityLabel: getCommunityDisplayName(
+          request.community || request.communityName
+        ),
+        meta: request.borrowerUsername
+          ? `Lent to ${request.borrowerUsername}`
+          : "Currently lent out",
+      }));
+  }, [ownerRequests]);
 
   return (
     <section className="grid gap-6">
@@ -76,26 +140,31 @@ function Profile({ activeCommunity, user, userProfile }) {
 
           <SectionCard title={`${"\u{1F331}"} Lending Activity`}>
             <div className="grid gap-3 sm:grid-cols-2">
-              <UiStatCard
-                icon={`${"\u{1F4E6}"}`}
-                label="Listed Items"
-                value={lendingStats.listedItems}
-              />
-              <UiStatCard
-                icon={`${"\u2705"}`}
-                label="Currently Available"
-                value={lendingStats.availableItems}
-              />
-              <UiStatCard
-                icon={`${"\u{1F91D}"}`}
-                label="Currently Lent Out"
-                value={lendingStats.currentlyLentOut}
-              />
-              <UiStatCard
-                icon={`${"\u{1F389}"}`}
-                label="Completed Lends"
-                value={lendingStats.completedLends}
-              />
+              <button
+                className="rounded-2xl text-left transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100"
+                type="button"
+                onClick={() => setLendingModal("available")}
+              >
+                <UiStatCard
+                  icon={`${"\u2705"}`}
+                  label="Currently Available"
+                  note="Tap to view across communities"
+                  tone="success"
+                  value={lendingStats.availableItems}
+                />
+              </button>
+              <button
+                className="rounded-2xl text-left transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100"
+                type="button"
+                onClick={() => setLendingModal("lentOut")}
+              >
+                <UiStatCard
+                  icon={`${"\u{1F91D}"}`}
+                  label="Currently Lent Out"
+                  note="Tap to view across communities"
+                  value={lendingStats.currentlyLentOut}
+                />
+              </button>
             </div>
           </SectionCard>
         </div>
@@ -109,6 +178,26 @@ function Profile({ activeCommunity, user, userProfile }) {
           onSaved={setMessage}
           user={user}
           userProfile={userProfile}
+        />
+      )}
+
+      {lendingModal === "available" && (
+        <LendingItemsModal
+          emptyLabel="You have no available items right now."
+          entries={availableEntries}
+          onClose={() => setLendingModal(null)}
+          subtitle="Your available items across every community you're in."
+          title={`${"✅"} Currently Available`}
+        />
+      )}
+
+      {lendingModal === "lentOut" && (
+        <LendingItemsModal
+          emptyLabel="You have nothing lent out right now."
+          entries={lentOutEntries}
+          onClose={() => setLendingModal(null)}
+          subtitle="Your items currently lent out across every community you're in."
+          title={`${"\u{1F91D}"} Currently Lent Out`}
         />
       )}
     </section>

@@ -63,6 +63,55 @@ export const normalizeTrustStats = (trustStats = {}) => {
   };
 };
 
+// Mirrors the server-side accumulation in functions/index.js so the frontend can
+// rebuild a borrower's trust stats directly from their request records. This keeps
+// the profile in sync with what actually exists in Firebase: deleting a borrow
+// record removes its contribution, and if a record isn't there it isn't counted.
+const trustAdjustments = {
+  excellent: { score: 5, statKey: "excellentReturns" },
+  good: { score: 4, statKey: "goodReturns" },
+  minor_wear: { score: 3, statKey: "minorWearReturns" },
+  damaged: { score: 1.5, statKey: "damagedReturns" },
+  missing_part: { score: 1, statKey: "missingPartReturns" },
+  not_returned_properly: { score: 0, statKey: "notReturnedIssues" },
+  other: { score: 2, statKey: "otherIssues" },
+};
+
+const trustTargetStatuses = ["completed", "return_issue"];
+
+const issueReturnConditions = [
+  "damaged",
+  "missing_part",
+  "not_returned_properly",
+  "other",
+];
+
+export const computeTrustStatsFromRequests = (requests = []) => {
+  const stats = { ...defaultTrustStats };
+
+  requests.forEach((request) => {
+    if (!trustTargetStatuses.includes(request?.status)) {
+      return;
+    }
+
+    const adjustment = trustAdjustments[request?.returnCondition];
+
+    if (!adjustment) {
+      return;
+    }
+
+    stats.completedBorrows += 1;
+    stats.totalReturnScore += adjustment.score;
+    stats[adjustment.statKey] = (stats[adjustment.statKey] || 0) + 1;
+
+    if (issueReturnConditions.includes(request.returnCondition)) {
+      stats.returnIssues += 1;
+    }
+  });
+
+  return stats;
+};
+
 export const calculateAggregateTrustRating = (trustStats = {}) => {
   const stats = normalizeTrustStats(trustStats);
 

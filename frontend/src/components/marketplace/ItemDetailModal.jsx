@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Badge from "../ui/Badge";
 import TrustRatingMark from "../profile/TrustRatingMark";
+import { useProfileSummary } from "../../hooks/useProfileSummary";
 import { useUserProfiles } from "../../hooks/useUserProfiles";
 import { fetchItemReviews } from "../../services/reviewService";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
 import { getItemConditionLabel } from "../../utils/itemCondition";
-import { getTrustRating, getTrustStats } from "../../utils/trust";
+import {
+  calculateAggregateTrustRating,
+  getTrustStats,
+} from "../../utils/trust";
 
 const DetailRow = ({ label, value }) => (
   <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
@@ -78,6 +82,15 @@ function ItemDetailModal({
     [item?.id, reviewsState.itemId, reviewsState.reviews]
   );
   const reviewerProfiles = useUserProfiles(reviewerIds);
+  // Rebuild the owner's trust from their actual borrow records so the "Meet the
+  // owner" rating reflects the live database instead of the stored legacy score.
+  const {
+    borrowerRequestsLoaded: ownerTrustLoaded,
+    derivedTrustStats: ownerDerivedTrustStats,
+  } = useProfileSummary(item?.ownerId, {
+    includeBorrowerRequests: true,
+    includeOwnerRequests: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -112,8 +125,15 @@ function ItemDetailModal({
     ownerProfile?.username || item.ownerUsername || "Unknown user";
   const categoryLabel = getItemCategoryLabel(item);
   const conditionLabel = getItemConditionLabel(item);
-  const ownerTrustRating = ownerProfile ? getTrustRating(ownerProfile) : null;
-  const ownerTrustStats = ownerProfile ? getTrustStats(ownerProfile) : null;
+  const ownerTrustStats = ownerTrustLoaded
+    ? ownerDerivedTrustStats
+    : ownerProfile
+      ? getTrustStats(ownerProfile)
+      : null;
+  const ownerTrustRating =
+    ownerTrustLoaded || ownerProfile
+      ? calculateAggregateTrustRating(ownerTrustStats || {})
+      : null;
   const listedDate = formatFirestoreDate(item.createdAt, "Not listed");
   const preferredPickupLocation =
     item.preferredPickupLocation || "To be arranged";

@@ -5,16 +5,19 @@ import ProfileAvatar from "../components/profile/ProfileAvatar";
 import TrustRatingMark from "../components/profile/TrustRatingMark";
 import SectionCard from "../components/ui/SectionCard";
 import { useCommunityNeighbors } from "../hooks/useCommunityNeighbors";
+import { useCommunityTrustStats } from "../hooks/useCommunityTrustStats";
 import { usePublicProfileModal } from "../hooks/usePublicProfileModal";
 import { useRequests } from "../hooks/useRequests";
-import { getProfileActiveCommunity } from "../utils/communityDisplay";
 import { formatFirestoreDate } from "../utils/formatDate";
 import {
   activeBorrowingStatuses,
   ownerNeedsActionStatuses,
   pendingBorrowerRequestStatuses,
 } from "../utils/requestStatus";
-import { getTrustRating } from "../utils/trust";
+import {
+  calculateAggregateTrustRating,
+  getTrustRating,
+} from "../utils/trust";
 
 function Home({
   activeCommunity,
@@ -39,6 +42,10 @@ function Home({
     activeCommunityId,
     user,
   });
+  const {
+    loaded: communityTrustLoaded,
+    trustStatsByUser: communityTrustStatsByUser,
+  } = useCommunityTrustStats({ activeCommunity, activeCommunityId, user });
   const {
     closeUserProfile,
     openUserProfile,
@@ -286,7 +293,7 @@ function Home({
                         {neighbor.username || "ShareSync neighbor"}
                       </p>
                       <p className="truncate text-xs font-semibold text-slate-500">
-                        {getProfileActiveCommunity(neighbor)}
+                        {communityLabel}
                       </p>
                       {neighbor.createdAt && (
                         <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400">
@@ -294,7 +301,16 @@ function Home({
                         </p>
                       )}
                     </div>
-                    <TrustRatingMark rating={getTrustRating(neighbor)} size="sm" />
+                    <TrustRatingMark
+                      rating={
+                        communityTrustLoaded
+                          ? calculateAggregateTrustRating(
+                              communityTrustStatsByUser[neighbor.uid] || {}
+                            )
+                          : getTrustRating(neighbor)
+                      }
+                      size="sm"
+                    />
                   </button>
                 ))}
               </div>
@@ -303,6 +319,8 @@ function Home({
         </aside>
       </div>
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         profile={selectedNeighbor}

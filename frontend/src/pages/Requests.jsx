@@ -636,6 +636,8 @@ function Requests({
         userProfile={userProfile}
       />
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         profile={profile}

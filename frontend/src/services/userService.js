@@ -94,7 +94,6 @@ const getStoredCommunityName = (community) =>
     .toLowerCase();
 
 const isCommunityMatch = (profile, activeCommunityId, activeCommunity) => {
-  const communityName = getStoredCommunityName(activeCommunity);
   const communities = Array.isArray(profile.communities)
     ? profile.communities
     : [];
@@ -106,14 +105,37 @@ const isCommunityMatch = (profile, activeCommunityId, activeCommunity) => {
           ? community === activeCommunityId
           : community?.communityId === activeCommunityId
       ));
-  const matchesName =
+
+  if (matchesId) {
+    return true;
+  }
+
+  // Community ids are unique, but display names are not. If we're viewing a
+  // community that has an id and this profile references communities by id,
+  // require an id match — otherwise a different community that happens to share
+  // a name would leak into this community's neighbor list. Only fall back to
+  // name matching for legacy profiles that store no community ids at all.
+  const profileHasCommunityId =
+    Boolean(profile.activeCommunityId) ||
+    communities.some((community) =>
+      typeof community === "string"
+        ? Boolean(community)
+        : Boolean(community?.communityId)
+    );
+
+  if (activeCommunityId && profileHasCommunityId) {
+    return false;
+  }
+
+  const communityName = getStoredCommunityName(activeCommunity);
+
+  return (
     Boolean(communityName) &&
     (getStoredCommunityName(profile.activeCommunity) === communityName ||
       communities.some(
         (community) => getStoredCommunityName(community) === communityName
-      ));
-
-  return matchesId || matchesName;
+      ))
+  );
 };
 
 export const fetchCommunityNeighbors = async ({

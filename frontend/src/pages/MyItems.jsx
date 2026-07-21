@@ -359,6 +359,8 @@ function MyItems({ activeCommunity, activeCommunityId, onListItem, user }) {
         user={user}
       />
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         onOpenItemDetail={(item) => {

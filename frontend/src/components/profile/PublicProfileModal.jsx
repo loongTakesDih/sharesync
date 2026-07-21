@@ -1,7 +1,10 @@
 import { useProfileSummary } from "../../hooks/useProfileSummary";
 import { formatFirestoreDate } from "../../utils/formatDate";
 import { getItemCategoryLabel } from "../../utils/itemCategories";
-import { getTrustRating, getTrustStats } from "../../utils/trust";
+import {
+  calculateAggregateTrustRating,
+  getTrustStats,
+} from "../../utils/trust";
 import ProfileAvatar from "./ProfileAvatar";
 import PreviousUsernamesDropdown from "./PreviousUsernamesDropdown";
 import TrustBadge from "./TrustBadge";
@@ -14,13 +17,22 @@ import {
   getProfileCommunities,
 } from "../../utils/communityDisplay";
 
-function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
+function PublicProfileModal({
+  activeCommunity,
+  activeCommunityId,
+  loading,
+  onClose,
+  onOpenItemDetail,
+  profile,
+}) {
   const {
+    borrowerRequestsLoaded,
+    derivedTrustStats,
     error,
     loading: summaryLoading,
     ownedItems,
   } = useProfileSummary(profile?.uid, {
-    includeBorrowerRequests: false,
+    includeBorrowerRequests: true,
     includeOwnerRequests: false,
   });
 
@@ -28,11 +40,31 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
     return null;
   }
 
-  const trustRating = getTrustRating(profile);
-  const stats = getTrustStats(profile);
-  const availableItems = ownedItems.filter((item) => item.available === true);
+  // Reflect the actual borrow records in Firebase; fall back to the stored
+  // counter if those records aren't readable or haven't loaded yet.
+  const stats = borrowerRequestsLoaded
+    ? derivedTrustStats
+    : getTrustStats(profile);
+  const trustRating = calculateAggregateTrustRating(stats);
+  const availableItems = ownedItems.filter((item) => {
+    if (item.available !== true) {
+      return false;
+    }
+
+    // Only show listings from the community the viewer is currently in, so a
+    // borrower never sees this user's items from a community they don't share.
+    if (activeCommunityId) {
+      return item.communityId === activeCommunityId;
+    }
+
+    if (activeCommunity) {
+      return item.community === activeCommunity;
+    }
+
+    return true;
+  });
   const communities = getProfileCommunities(profile);
-  const activeCommunity = getProfileActiveCommunity(profile);
+  const profileActiveCommunity = getProfileActiveCommunity(profile);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 py-6">
@@ -121,7 +153,7 @@ function PublicProfileModal({ loading, onClose, onOpenItemDetail, profile }) {
             <Section title={`${"\u{1F3D8}\uFE0F"} Community Presence`}>
               <div className="rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100">
                 <p className="text-sm font-black text-emerald-900">
-                  Active in {activeCommunity}
+                  Active in {profileActiveCommunity}
                 </p>
                 <p className="mt-1 text-xs font-semibold text-emerald-700">
                   {communities.length} {communities.length === 1 ? "community" : "communities"} joined

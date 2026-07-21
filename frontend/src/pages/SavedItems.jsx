@@ -247,6 +247,8 @@ function SavedItems({
         user={user}
       />
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         onOpenItemDetail={(item) => {

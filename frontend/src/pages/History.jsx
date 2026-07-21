@@ -205,6 +205,8 @@ function History({ activeCommunity, activeCommunityId, user, userProfile }) {
       )}
 
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         profile={profile}

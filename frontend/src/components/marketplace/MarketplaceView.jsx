@@ -451,6 +451,8 @@ function MarketplaceView({
           user={user}
         />
         <PublicProfileModal
+          activeCommunity={activeCommunity}
+          activeCommunityId={activeCommunityId}
           loading={profileLoading}
           onClose={closeUserProfile}
           onOpenItemDetail={(item) => {
@@ -673,6 +675,8 @@ function MarketplaceView({
         user={user}
       />
       <PublicProfileModal
+        activeCommunity={activeCommunity}
+        activeCommunityId={activeCommunityId}
         loading={profileLoading}
         onClose={closeUserProfile}
         onOpenItemDetail={(item) => {

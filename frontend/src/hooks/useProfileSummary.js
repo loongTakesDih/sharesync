@@ -5,6 +5,7 @@ import {
   activeBorrowingStatuses,
   preHandoverStatuses,
 } from "../utils/requestStatus";
+import { computeTrustStatsFromRequests } from "../utils/trust";
 
 export const lendingFlowStatuses = [
   ...preHandoverStatuses,
@@ -23,6 +24,9 @@ export const useProfileSummary = (
   const [ownedItems, setOwnedItems] = useState([]);
   const [ownerRequests, setOwnerRequests] = useState([]);
   const [borrowerRequests, setBorrowerRequests] = useState([]);
+  // Tracks which profile the loaded borrower requests belong to. Set only inside
+  // the snapshot callbacks so we never call setState synchronously in the effect.
+  const [borrowerRequestsUserId, setBorrowerRequestsUserId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -80,8 +84,14 @@ export const useProfileSummary = (
                 ...requestDoc.data(),
               }))
             );
+            setBorrowerRequestsUserId(profileUserId);
           },
-          handleError("Borrowing activity")
+          () => {
+            // If a viewer can't read another user's requests, silently fall back
+            // to the stored trustStats rather than surfacing an error.
+            setBorrowerRequests([]);
+            setBorrowerRequestsUserId("");
+          }
         )
       : undefined;
 
@@ -131,9 +141,25 @@ export const useProfileSummary = (
     [borrowerRequests]
   );
 
+  // Trust stats rebuilt from the actual request records (across all communities),
+  // so the profile reflects what genuinely exists in Firebase.
+  const derivedTrustStats = useMemo(
+    () => computeTrustStatsFromRequests(borrowerRequests),
+    [borrowerRequests]
+  );
+
+  // Only trust the derived stats once this profile's borrower requests have
+  // actually loaded; otherwise consumers fall back to the stored trustStats.
+  const borrowerRequestsLoaded =
+    includeBorrowerRequests &&
+    Boolean(profileUserId) &&
+    borrowerRequestsUserId === profileUserId;
+
   return {
     borrowerRequests,
+    borrowerRequestsLoaded,
     borrowingStats,
+    derivedTrustStats,
     error,
     lendingStats,
     loading: false,
